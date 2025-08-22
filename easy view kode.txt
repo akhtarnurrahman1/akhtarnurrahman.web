@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Page Source - Inspect HTML Source Code</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#4f46e5',
+                        accent: '#10b981'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #2563eb;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .code-container {
+            font-family: 'Courier New', monospace;
+            line-height: 1.4;
+        }
+        
+        .hover-scale {
+            transition: transform 0.2s ease;
+        }
+        
+        .hover-scale:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-6">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-blue-500 rounded-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">View Page Source</h1>
+                    <p class="text-gray-600">Inspect HTML source code of any website</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        <!-- URL Input Form -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8 hover-scale">
+            <form id="sourceForm" class="space-y-4">
+                <div>
+                    <label for="url" class="block text-sm font-medium text-gray-700 mb-2">
+                        Enter Website URL
+                    </label>
+                    <div class="relative">
+                        <input
+                            type="text"
+                            id="url"
+                            placeholder="https://example.com"
+                            class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        />
+                        <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <button
+                    type="submit"
+                    id="submitBtn"
+                    class="w-full md:w-auto px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
+                >
+                    <span id="btnText">View Source Code</span>
+                    <div id="btnLoading" class="hidden flex items-center justify-center space-x-2">
+                        <div class="loading-spinner"></div>
+                        <span>Fetching...</span>
+                    </div>
+                </button>
+            </form>
+        </div>
+
+        <!-- Results Container -->
+        <div id="resultsContainer" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 fade-in">
+            <!-- Result Header -->
+            <div class="border-b border-gray-200 p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-900">Source Code</h2>
+                        <p id="resultUrl" class="text-sm text-gray-600 break-all"></p>
+                    </div>
+                    <div id="actionButtons" class="hidden flex space-x-3">
+                        <button
+                            id="copyBtn"
+                            class="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                            <svg id="copyIcon" class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                            <svg id="copiedIcon" class="hidden w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span id="copyText" class="text-sm text-gray-600">Copy</span>
+                        </button>
+                        <button
+                            id="downloadBtn"
+                            class="flex items-center space-x-2 px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span class="text-sm">Download</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Content -->
+            <div class="p-6">
+                <!-- Error Display -->
+                <div id="errorDisplay" class="hidden flex items-start space-x-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <div>
+                        <h3 class="font-medium text-red-800">Error</h3>
+                        <p id="errorMessage" class="text-sm text-red-700 mt-1"></p>
+                        <div class="mt-3 text-xs text-red-600">
+                            <p><strong>Tip:</strong> Some websites block cross-origin requests. Try using a different URL or ensure the website allows external access.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Source Code Display -->
+                <div id="sourceDisplay" class="hidden space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span id="charCount" class="text-sm text-gray-600"></span>
+                    </div>
+                    <div class="relative">
+                        <pre class="bg-gray-50 border border-gray-200 rounded-lg p-4 overflow-x-auto text-sm code-container max-h-96 overflow-y-auto"><code id="sourceCode" class="text-gray-800"></code></pre>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden text-center py-8 text-gray-500">
+                    No source code to display
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="mt-12 bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h3 class="text-lg font-semibold text-blue-900 mb-3">How to Use</h3>
+            <div class="grid md:grid-cols-2 gap-6 text-sm text-blue-800">
+                <div>
+                    <h4 class="font-medium mb-2">1. Enter URL</h4>
+                    <p>Type or paste the complete URL of the webpage you want to inspect (including http:// or https://).</p>
+                </div>
+                <div>
+                    <h4 class="font-medium mb-2">2. View Source</h4>
+                    <p>Click "View Source Code" to fetch and display the HTML source code of the webpage.</p>
+                </div>
+                <div>
+                    <h4 class="font-medium mb-2">3. Copy or Download</h4>
+                    <p>Use the copy button to copy the source to your clipboard or download it as an HTML file.</p>
+                </div>
+                <div>
+                    <h4 class="font-medium mb-2">4. Analyze Code</h4>
+                    <p>Examine the HTML structure, meta tags, and other elements of the webpage.</p>
+                </div>
+            </div>
+            <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-xs text-yellow-800">
+                    <strong>Note:</strong> Due to browser security restrictions (CORS), some websites may not be accessible. This is normal and protects user privacy.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-16 border-t border-gray-200 bg-white">
+        <div class="max-w-6xl mx-auto px-4 py-8">
+            <div class="text-center text-gray-600">
+                <p class="text-sm">
+                    View Page Source Tool - Inspect HTML source code of any website
+                </p>
+                <p class="text-xs mt-2 text-gray-500">
+                    Built with HTML, CSS, and JavaScript
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        class ViewPageSource {
+            constructor() {
+                this.form = document.getElementById('sourceForm');
+                this.urlInput = document.getElementById('url');
+                this.submitBtn = document.getElementById('submitBtn');
+                this.btnText = document.getElementById('btnText');
+                this.btnLoading = document.getElementById('btnLoading');
+                this.resultsContainer = document.getElementById('resultsContainer');
+                this.resultUrl = document.getElementById('resultUrl');
+                this.actionButtons = document.getElementById('actionButtons');
+                this.errorDisplay = document.getElementById('errorDisplay');
+                this.errorMessage = document.getElementById('errorMessage');
+                this.sourceDisplay = document.getElementById('sourceDisplay');
+                this.sourceCode = document.getElementById('sourceCode');
+                this.charCount = document.getElementById('charCount');
+                this.emptyState = document.getElementById('emptyState');
+                this.copyBtn = document.getElementById('copyBtn');
+                this.downloadBtn = document.getElementById('downloadBtn');
+                this.copyIcon = document.getElementById('copyIcon');
+                this.copiedIcon = document.getElementById('copiedIcon');
+                this.copyText = document.getElementById('copyText');
+                
+                this.currentSource = '';
+                this.currentUrl = '';
+                
+                this.init();
+            }
+            
+            init() {
+                this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+                this.copyBtn.addEventListener('click', () => this.handleCopy());
+                this.downloadBtn.addEventListener('click', () => this.handleDownload());
+            }
+            
+            isValidUrl(string) {
+                try {
+                    new URL(string);
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+            
+            setLoading(loading) {
+                if (loading) {
+                    this.submitBtn.disabled = true;
+                    this.btnText.classList.add('hidden');
+                    this.btnLoading.classList.remove('hidden');
+                    this.urlInput.disabled = true;
+                } else {
+                    this.submitBtn.disabled = false;
+                    this.btnText.classList.remove('hidden');
+                    this.btnLoading.classList.add('hidden');
+                    this.urlInput.disabled = false;
+                }
+            }
+            
+            showResults() {
+                this.resultsContainer.classList.remove('hidden');
+                this.resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
+            hideAllStates() {
+                this.errorDisplay.classList.add('hidden');
+                this.sourceDisplay.classList.add('hidden');
+                this.emptyState.classList.add('hidden');
+                this.actionButtons.classList.add('hidden');
+            }
+            
+            showError(message) {
+                this.hideAllStates();
+                this.errorMessage.textContent = message;
+                this.errorDisplay.classList.remove('hidden');
+                this.showResults();
+            }
+            
+            showSource(source) {
+                this.hideAllStates();
+                this.currentSource = source;
+                
+                if (source) {
+                    this.sourceCode.textContent = source;
+                    this.charCount.textContent = `${source.length.toLocaleString()} characters`;
+                    this.sourceDisplay.classList.remove('hidden');
+                    this.actionButtons.classList.remove('hidden');
+                } else {
+                    this.emptyState.classList.remove('hidden');
+                }
+                
+                this.showResults();
+            }
+            
+            async handleSubmit(e) {
+                e.preventDefault();
+                
+                const url = this.urlInput.value.trim();
+                
+                if (!url) {
+                    this.showError('Please enter a valid URL');
+                    return;
+                }
+                
+                if (!this.isValidUrl(url)) {
+                    this.showError('Please enter a valid URL (include http:// or https://)');
+                    return;
+                }
+                
+                this.setLoading(true);
+                this.currentUrl = url;
+                this.resultUrl.textContent = url;
+                
+                try {
+                    // Using AllOrigins as a CORS proxy
+                    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+                    const response = await fetch(proxyUrl);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.contents) {
+                        this.showSource(data.contents);
+                    } else {
+                        this.showError('No content received from the URL');
+                    }
+                    
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    this.showError('Failed to fetch page source. This might be due to CORS restrictions or the site being unavailable.');
+                } finally {
+                    this.setLoading(false);
+                }
+            }
+            
+            async handleCopy() {
+                if (!this.currentSource) return;
+                
+                try {
+                    await navigator.clipboard.writeText(this.currentSource);
+                    
+                    // Show copied state
+                    this.copyIcon.classList.add('hidden');
+                    this.copiedIcon.classList.remove('hidden');
+                    this.copyText.textContent = 'Copied!';
+                    this.copyText.classList.remove('text-gray-600');
+                    this.copyText.classList.add('text-green-600');
+                    
+                    // Reset after 2 seconds
+                    setTimeout(() => {
+                        this.copyIcon.classList.remove('hidden');
+                        this.copiedIcon.classList.add('hidden');
+                        this.copyText.textContent = 'Copy';
+                        this.copyText.classList.remove('text-green-600');
+                        this.copyText.classList.add('text-gray-600');
+                    }, 2000);
+                    
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    alert('Failed to copy to clipboard');
+                }
+            }
+            
+            handleDownload() {
+                if (!this.currentSource) return;
+                
+                const element = document.createElement('a');
+                const file = new Blob([this.currentSource], { type: 'text/html' });
+                element.href = URL.createObjectURL(file);
+                element.download = `source-${new Date().getTime()}.html`;
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            }
+        }
+        
+        // Initialize the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new ViewPageSource();
+        });
+    </script>
+</body>
+</html>

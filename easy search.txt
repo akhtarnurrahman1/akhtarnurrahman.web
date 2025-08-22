@@ -1,0 +1,3912 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasySearch</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Generative AI SDK -->
+    <script type="module">
+        // Mengimpor GoogleGenerativeAI dari CDN dan membuatnya tersedia secara global
+        import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
+        window.GoogleGenerativeAI = GoogleGenerativeAI;
+    </script>
+    <style>
+        /* Base styles for light mode */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background fallback */
+            line-height: 1.6;
+            color: #333; /* Default text color for EasySearch section */
+            transition: background-color 0.3s ease, color 0.3s ease, font-size 0.3s ease; /* Smooth transition for theme and font size change */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            font-size: var(--base-font-size, 1rem); /* Default font size */
+        }
+        .search-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .result-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-left-color: #667eea;
+        }
+        .search-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transition: all 0.3s ease;
+        }
+        .search-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .search-engine-btn.active {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.5); /* Highlight active button */
+            border: 2px solid #667eea;
+        }
+
+        /* Custom modal for alerts/confirms */
+        .custom-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .custom-modal {
+            background: #2d3748; /* gray-800 */
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.2);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        .custom-modal-title {
+            font-size: 1.5rem; /* text-2xl */
+            font-weight: 600; /* font-semibold */
+            margin-bottom: 16px;
+            color: #cbd5e0; /* text-gray-200 */
+        }
+        .custom-modal-message {
+            margin-bottom: 24px;
+            color: #a0aec0; /* text-gray-400 */
+        }
+        .custom-modal-actions button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .custom-modal-actions .confirm-btn {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+            margin-right: 12px;
+        }
+        .custom-modal-actions .confirm-btn:hover {
+            background-color: #dc2626; /* red-600 */
+        }
+        .custom-modal-actions .cancel-btn {
+            background-color: #4a5568; /* gray-600 */
+            color: white;
+        }
+        .custom-modal-actions .cancel-btn:hover {
+            background-color: #2d3748; /* gray-700 */
+        }
+        .custom-modal-actions .ok-btn {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+        }
+        .custom-modal-actions .ok-btn:hover {
+            background-color: #2563eb; /* blue-600 */
+        }
+
+        /* Dark Mode Styles */
+        body.dark-mode {
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+        }
+        body.dark-mode .text-gray-800 {
+            color: #e2e8f0; /* Light text for headings */
+        }
+        body.dark-mode .border-gray-200 {
+            border-color: #4a5568; /* Darker border */
+        }
+        body.dark-mode .text-gray-700 {
+            color: #cbd5e0; /* Lighter text */
+        }
+        body.dark-mode .placeholder-gray-400::placeholder { /* Specific for placeholder text in dark mode */
+            color: #a0aec0;
+        }
+        body.dark-mode .result-card {
+            background-color: #2d3748; /* Darker card background */
+            border-left-color: #667eea; /* Keep accent color */
+        }
+        body.dark-mode .result-card:hover {
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); /* Darker shadow */
+        }
+        body.dark-mode .text-blue-600 {
+            color: #90cdf4; /* Lighter blue for links */
+        }
+        body.dark-mode .text-green-600 {
+            color: #9ae6b4; /* Lighter green for URLs */
+        }
+        body.dark-mode .text-gray-50 {
+            color: #e2e8f0; /* Lighter text for card content */
+        }
+        body.dark-mode .search-engine-btn {
+            background-color: #4a5568; /* Darker button background */
+            color: #e2e8f0; /* Lighter text */
+        }
+        body.dark-mode .search-engine-btn.active {
+            box-shadow: 0 0 0 3px rgba(144, 205, 244, 0.5); /* Lighter highlight */
+            border: 2px solid #90cdf4;
+        }
+        body.dark-mode .bg-blue-100 { background-color: #2b6cb0; color: #e2e8f0; } /* Dark mode specific colors for engine buttons */
+        body.dark-mode .bg-green-100 { background-color: #2f855a; color: #e2e8f0; }
+        body.dark-mode .bg-orange-100 { background-color: #b7791f; color: #e2e8f0; }
+        body.dark-mode .bg-purple-100 { background-color: #6b46c1; color: #e2e8f0; }
+        body.dark-mode .bg-lime-100 { background-color: #68d391; color: #1a202c; }
+        body.dark-mode .bg-red-100 { background-color: #c53030; color: #e2e8f0; }
+        body.dark-mode .bg-indigo-100 { background-color: #5a67d8; color: #e2e8f0; }
+        body.dark-mode .bg-pink-100 { background-color: #d53f8c; color: #e2e8f0; }
+        body.dark-mode .bg-yellow-100 { background-color: #d69e2e; color: #1a202c; }
+        body.dark-mode .bg-gray-100 { background-color: #a0aec0; color: #1a202c; }
+
+        body.dark-mode footer {
+            background-color: #2d3748; /* Darker footer */
+        }
+
+        /* High Contrast Mode Styles */
+        body.high-contrast-mode {
+            background-color: black !important;
+            color: white !important;
+        }
+        body.high-contrast-mode .text-gray-800,
+        body.high-contrast-mode .text-gray-700,
+        body.high-contrast-mode .text-gray-50,
+        body.high-contrast-mode .text-gray-300,
+        body.high-contrast-mode .text-gray-400,
+        body.high-contrast-mode .text-blue-700,
+        body.high-contrast-mode .text-green-700,
+        body.high-contrast-mode .text-orange-700,
+        body.high-contrast-mode .text-purple-700,
+        body.high-contrast-mode .text-lime-700,
+        body.high-contrast-mode .text-red-700,
+        body.high-contrast-mode .text-indigo-700,
+        body.high-contrast-mode .text-pink-700,
+        body.high-contrast-mode .text-yellow-700,
+        body.high-contrast-mode .text-gray-700 {
+            color: white !important;
+        }
+        body.high-contrast-mode .search-gradient,
+        body.high-contrast-mode .search-button {
+            background: #00ff00 !important; /* Bright green */
+            color: black !important;
+            border: 2px solid white !important;
+        }
+        body.high-contrast-mode .result-card,
+        body.high-contrast-mode .main-content-card,
+        body.high-contrast-mode .bg-white,
+        body.high-contrast-mode .bg-gray-50,
+        body.high-contrast-mode .sidebar,
+        body.high-contrast-mode .custom-modal,
+        body.high-contrast-mode .background-picker-content,
+        body.high-contrast-mode #loginForm,
+        body.high-contrast-mode .gemini-result-card,
+        body.high-contrast-mode .particle-picker-content {
+            background-color: black !important;
+            border: 1px solid white !important;
+            box-shadow: none !important;
+        }
+        body.high-contrast-mode .result-card:hover {
+            background-color: #333 !important;
+            border-left-color: #00ff00 !important;
+        }
+        body.high-contrast-mode .text-blue-600,
+        body.high-contrast-mode .text-green-600 {
+            color: yellow !important; /* Bright yellow for links/URLs */
+        }
+        body.high-contrast-mode input,
+        body.high-contrast-mode textarea,
+        body.high-contrast-mode select {
+            background-color: black !important;
+            color: white !important;
+            border-color: white !important;
+        }
+        body.high-contrast-mode .placeholder-gray-400::placeholder {
+            color: #ccc !important;
+        }
+        body.high-contrast-mode .toggle-slider {
+            background-color: #555 !important;
+        }
+        body.high-contrast-mode input:checked + .toggle-slider {
+            background-color: #00ff00 !important;
+        }
+        body.high-contrast-mode .search-engine-btn {
+            background-color: #333 !important;
+            color: white !important;
+            border: 1px solid white !important;
+        }
+        body.high-contrast-mode .search-engine-btn.active {
+            box-shadow: 0 0 0 3px #00ff00 !important;
+            border: 2px solid #00ff00 !important;
+        }
+        body.high-contrast-mode .voice-search-button {
+            color: #00ff00 !important;
+        }
+        body.high-contrast-mode .voice-search-button.listening {
+            background-color: red !important;
+            color: white !important;
+        }
+        body.high-contrast-mode footer {
+            background-color: black !important;
+            border-top: 1px solid white !important;
+        }
+        body.high-contrast-mode .sidebar-setting span {
+            color: white !important;
+        }
+        body.high-contrast-mode .sidebar-setting .status-text {
+            color: #00ff00 !important;
+        }
+        body.high-contrast-mode .clear-history-btn,
+        body.high-contrast-mode #loginForm button {
+            background-color: #00ff00 !important;
+            color: black !important;
+            border: 1px solid white !important;
+        }
+        body.high-contrast-mode #loginMessage {
+            color: yellow !important;
+        }
+        body.high-contrast-mode #logoutButton {
+            background-color: red !important;
+            color: white !important;
+            border: 1px solid white !important;
+        }
+
+        /* Focus Mode Styles */
+        body.focus-mode {
+            background-image: none !important; /* Remove background image */
+            background-color: #f0f2f5 !important; /* Simple light background */
+        }
+        body.focus-mode.dark-mode {
+            background-color: #1a202c !important; /* Simple dark background */
+        }
+        body.focus-mode .main-content-card {
+            background-color: white !important; /* Opaque white */
+            backdrop-filter: none !important; /* Remove blur */
+        }
+        body.focus-mode.dark-mode .main-content-card {
+            background-color: #2d3748 !important; /* Opaque dark */
+        }
+        body.focus-mode #quickSearchSuggestions,
+        body.focus-mode #searchEngineOptions,
+        body.focus-mode footer,
+        body.focus-mode #searchResults {
+            display: none !important;
+        }
+        body.focus-mode header {
+            padding-bottom: 2rem !important; /* Reduce header padding */
+        }
+        body.focus-mode .container.mx-auto.px-4.-mt-6 {
+            margin-top: 2rem !important; /* Adjust main content margin */
+        }
+
+
+        /* Article Summary Modal Styles */
+        .article-summary-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1002; /* Higher than background picker */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .article-summary-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .article-summary-content {
+            background: #fff;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            max-width: 800px;
+            width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            color: #333;
+            position: relative;
+        }
+        body.dark-mode .article-summary-content {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+        body.high-contrast-mode .article-summary-content {
+            background: black !important;
+            color: white !important;
+            border: 1px solid white !important;
+        }
+        .article-summary-close-btn {
+            background: none;
+            border: none;
+            color: #333;
+            font-size: 2rem;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+        body.dark-mode .article-summary-close-btn {
+            color: #e2e8f0;
+        }
+        body.high-contrast-mode .article-summary-close-btn {
+            color: white !important;
+        }
+        .article-summary-loading {
+            text-align: center;
+            padding: 20px;
+        }
+        .article-summary-loading .loading-spinner {
+            margin: 0 auto;
+        }
+
+        /* Search Intent Display Styles */
+        #searchIntentDisplay {
+            background-color: #e6fffa; /* Light teal */
+            color: #234e52; /* Dark teal */
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            font-weight: 500;
+            text-align: center;
+            display: none; /* Hidden by default */
+        }
+        body.dark-mode #searchIntentDisplay {
+            background-color: #2c5282; /* Darker blue */
+            color: #e2e8f0; /* Light text */
+        }
+        body.high-contrast-mode #searchIntentDisplay {
+            background-color: black !important;
+            color: #00ff00 !important;
+            border: 1px solid white !important;
+        }
+
+
+        /* Toggle switch styles */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #667eea;
+        }
+
+        input:focus + .toggle-slider {
+            box-shadow: 0 0 1px #667eea;
+        }
+
+        input:checked + .toggle-slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        /* Kids Mode Background Styles (default, can be overridden by custom backgrounds) */
+        body.kids-mode-bg {
+            background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%); /* Bright green gradient */
+        }
+        /* Dark mode specific for kids mode background */
+        body.dark-mode.kids-mode-bg {
+            background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); /* Darker green for dark mode kids */
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background-color: #2d3748; /* Dark gray background */
+            z-index: 1000;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+            transform: translateX(100%); /* Hidden by default */
+            transition: transform 0.3s ease-in-out;
+            overflow-y: auto;
+            padding: 20px;
+            color: #e2e8f0; /* Light text */
+        }
+
+        .sidebar.active {
+            transform: translateX(0); /* Slide in */
+        }
+
+        .sidebar-close-btn {
+            background: none;
+            border: none;
+            color: #e2e8f0;
+            font-size: 2rem;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+
+        .sidebar-setting {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #4a5568; /* Darker border */
+        }
+        .sidebar-setting:last-child {
+            border-bottom: none;
+        }
+        .sidebar-setting span {
+            font-weight: 500;
+        }
+        .sidebar-setting .status-text {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        /* Voice Search Button Styles */
+        .voice-search-button {
+            background: none;
+            border: none;
+            color: #667eea; /* Purple-blue color */
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px; /* Same height as input */
+            height: 48px; /* Same height as input */
+            border-radius: 0.75rem; /* rounded-xl */
+            transition: background-color 0.3s ease, transform 0.1s ease;
+        }
+        .voice-search-button:hover {
+            background-color: rgba(102, 126, 234, 0.1); /* Light hover effect */
+        }
+        .voice-search-button:active {
+            transform: scale(0.95);
+        }
+        .voice-search-button.listening {
+            background-color: #ef4444; /* Red color when listening */
+            color: white;
+            animation: pulse-red-animation 1.5s infinite; /* Add pulse effect */
+        }
+        .voice-search-button svg {
+            width: 28px;
+            height: 28px;
+        }
+        body.dark-mode .voice-search-button {
+            color: #90cdf4; /* Lighter blue for dark mode */
+        }
+        body.dark-mode .voice-search-button:hover {
+            background-color: rgba(144, 205, 244, 0.1);
+        }
+        body.dark-mode .voice-search-button.listening {
+            background-color: #dc2626; /* Darker red for dark mode listening */
+        }
+
+        /* Background picker modal styles */
+        .background-picker-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .background-picker-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .background-picker-content {
+            background: #2d3748;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            color: #e2e8f0;
+            position: relative;
+        }
+        .background-picker-close-btn {
+            background: none;
+            border: none;
+            color: #e2e8f0;
+            font-size: 2rem;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+        .background-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .background-item {
+            border: 3px solid transparent;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            padding-top: 75%; /* 4:3 aspect ratio */
+            background-size: cover; /* Ensure gradients/colors fill */
+            background-position: center;
+        }
+        .background-item.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.5);
+        }
+        .background-item:hover {
+            transform: scale(1.03);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .background-item-label {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 8px;
+            font-size: 0.85rem;
+            text-align: center;
+        }
+        /* Styles for the main content area to follow background - MORE TRANSPARENT */
+        .main-content-card {
+            background-color: rgba(255, 255, 255, 0.3); /* Even more transparent white (0.3 alpha) */
+            backdrop-filter: blur(5px); /* Optional: blur effect for modern look */
+        }
+        body.dark-mode .main-content-card {
+            background-color: rgba(45, 55, 72, 0.3); /* Even more transparent dark for dark mode (0.3 alpha) */
+        }
+        /* Style for Gemini results */
+        .gemini-result-card {
+            background-color: #e0f2f7; /* Light blue background */
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: #2c3e50; /* Dark text */
+            line-height: 1.8;
+            white-space: pre-wrap; /* Preserve whitespace and line breaks */
+            font-size: 1rem;
+        }
+        body.dark-mode .gemini-result-card {
+            background-color: #34495e; /* Darker blue for dark mode */
+            color: #ecf0f1; /* Lighter text for dark mode */
+        }
+
+        /* Search History Styles */
+        .search-history-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 10px;
+        }
+        .search-history-item {
+            padding: 8px 0;
+            border-bottom: 1px solid #4a5568;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .search-history-item:last-child {
+            border-bottom: none;
+        }
+        .search-history-item:hover {
+            background-color: #4a5568; /* Darker hover for dark sidebar */
+            border-radius: 4px;
+        }
+        .search-history-item span {
+            font-size: 0.9rem;
+            color: #cbd5e0;
+        }
+        .clear-history-btn {
+            background-color: #ef4444; /* red-500 */
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-top: 20px;
+            width: 100%;
+            transition: background-color 0.2s ease;
+        }
+        .clear-history-btn:hover {
+            background-color: #dc2626; /* red-600 */
+        }
+
+        /* Bot Test Modal Styles */
+        #botTestModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000; /* Higher than other modals */
+            color: white;
+            text-align: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+        #botTestModal.hidden {
+            display: none;
+        }
+        #botTestClickArea {
+            background-color: #667eea;
+            color: white;
+            padding: 20px 40px;
+            border-radius: 12px;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            user-select: none; /* Prevent text selection on click */
+        }
+        #botTestClickArea:hover {
+            background-color: #764ba2;
+            transform: scale(1.02);
+        }
+        #botTestClickArea:active {
+            transform: scale(0.98);
+        }
+        #botTestInput {
+            background-color: #333;
+            color: white;
+            border: 2px solid #555;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            text-align: center;
+            width: 80%;
+            max-width: 300px;
+        }
+        #botTestContinueBtn {
+            background: linear-gradient(45deg, #28a745, #218838);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        #botTestContinueBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        #botTestContinueBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #6c757d;
+        }
+
+        /* Translation Section within Sidebar */
+        #translationSection {
+            padding-top: 20px;
+            border-top: 1px solid #4a5568;
+            margin-top: 20px;
+        }
+        #translationSection.hidden {
+            display: none;
+        }
+        #translationSection select,
+        #translationSection textarea {
+            background-color: #4a5568; /* Darker background for sidebar elements */
+            color: #e2e8f0;
+            border-color: #6a7a8d;
+        }
+        #translationSection select:focus,
+        #translationSection textarea:focus {
+            border-color: #667eea;
+        }
+        #translationOutput {
+            background-color: #4a5568; /* Darker background for sidebar elements */
+            color: #e2e8f0;
+            border: 1px solid #6a7a8d;
+        }
+
+        /* Login Modal Styles */
+        #loginModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10001; /* Higher than bot test modal */
+            color: white;
+            text-align: center;
+            flex-direction: column;
+            gap: 20px;
+        }
+        #loginModal.hidden {
+            display: none;
+        }
+        #loginForm {
+            background: #2d3748; /* gray-800 */
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            max-width: 400px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        #loginForm input {
+            background-color: #4a5568;
+            color: white;
+            border: 1px solid #6a7a8d;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        #loginForm input::placeholder {
+            color: #cbd5e0;
+        }
+        #loginForm button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        #loginForm .login-btn {
+            background-color: #667eea;
+            color: white;
+        }
+        #loginForm .login-btn:hover {
+            background-color: #764ba2;
+        }
+        #loginForm .register-btn {
+            background-color: #28a745;
+            color: white;
+        }
+        #loginForm .register-btn:hover {
+            background-color: #218838;
+        }
+        #loginMessage {
+            color: #ef4444; /* red-500 */
+            font-size: 0.9rem;
+            margin-top: -10px;
+        }
+        /* Removed #loggedInUserDisplay specific styling as it's now in footer */
+        #logoutButton {
+            background-color: #ef4444;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            /* No margin-left here, will be handled by flexbox in footer */
+        }
+        #logoutButton:hover {
+            background-color: #dc2626;
+        }
+
+        /* Particle container */
+        #particle-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Crucial: allows clicks to pass through */
+            z-index: 9999; /* Ensure it's on top of most elements */
+            overflow: hidden; /* Prevent particles from causing scrollbars */
+        }
+
+        /* Individual particle styling and animation */
+        .particle {
+            position: absolute;
+            font-size: 24px; /* Adjust size as needed */
+            opacity: 1;
+            transform: translate(-50%, -50%); /* Center the particle on the click point */
+            animation: particle-fade-move 1.5s forwards; /* Animation duration */
+            white-space: nowrap; /* Prevent emoji from wrapping */
+        }
+
+        @keyframes particle-fade-move {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: translate(-50%, -150%) scale(1.2); /* Move up and slightly scale */
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -250%) scale(0.8); /* Move further up, fade out, shrink */
+            }
+        }
+
+        /* Particle Picker Modal Styles */
+        .particle-picker-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1003; /* Higher than other modals */
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .particle-picker-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .particle-picker-content {
+            background: #2d3748;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            color: #e2e8f0;
+            position: relative;
+        }
+        .particle-picker-close-btn {
+            background: none;
+            border: none;
+            color: #e2e8f0;
+            font-size: 2rem;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+        .particle-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); /* Smaller grid for emojis */
+            gap: 10px;
+            margin-top: 20px;
+            justify-items: center; /* Center emojis in their grid cells */
+        }
+        .particle-item {
+            font-size: 36px; /* Larger emoji size for selection */
+            cursor: pointer;
+            padding: 8px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.1); /* Subtle background */
+        }
+        .particle-item.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.5);
+            background-color: rgba(102, 126, 234, 0.3); /* More visible background when selected */
+        }
+        .particle-item:hover {
+            transform: scale(1.1);
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Particle Container -->
+    <div id="particle-container"></div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="hidden">
+        <div id="loginForm">
+            <h2 class="text-3xl font-bold mb-4">Login / Register</h2>
+            <input type="text" id="loginAccount" placeholder="Akun (username/email)">
+            <input type="number" id="loginAge" placeholder="Umur (tahun)" min="1" max="120">
+            <p id="loginMessage" class="hidden text-red-500"></p>
+            <button id="registerBtn" class="register-btn">Daftar</button>
+            <button id="loginBtn" class="login-btn">Login</button>
+        </div>
+    </div>
+
+    <!-- Bot Test Modal -->
+    <div id="botTestModal" class="flex flex-col items-center justify-center hidden">
+        <h2 id="botTestInstruction" class="text-4xl font-bold mb-6">Verifikasi Keamanan</h2>
+        <p id="botTestMessage" class="text-xl mb-8">Klik area ini 4 kali.</p>
+        <div id="botTestClickArea" class="px-8 py-4 rounded-xl shadow-lg">
+            Klik Saya! <span id="clickCountDisplay">(0/4)</span>
+        </div>
+        <input type="text" id="botTestInput" class="mt-8 hidden" placeholder="Ketik kata di sini..." disabled>
+        <button id="botTestContinueBtn" class="mt-8 hidden" disabled>Lanjutkan</button>
+    </div>
+
+    <!-- Main Content Wrapper -->
+    <div id="mainContentWrapper" class="flex-grow hidden">
+        <!-- Header Section -->
+        <header class="search-gradient text-white py-12 shadow-lg relative">
+            <div class="container mx-auto px-4 text-center">
+                <h1 class="text-5xl font-bold mb-4">EasySearch</h1>
+                <p class="text-xl opacity-90">Mesin Pencari gampang cepat dan mudah</p>
+            </div>
+            <!-- User Info (moved from header) -->
+            <!-- Hamburger Menu Icon -->
+            <button id="menuToggle" class="absolute top-4 right-4 p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-all focus:outline-none">
+                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+        </header>
+
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar">
+            <button class="sidebar-close-btn" id="sidebarCloseBtn">&times;</button>
+            <h2 class="text-3xl font-bold mb-6 mt-10">Pengaturan Aplikasi</h2>
+
+            <div class="sidebar-setting">
+                <span>Mode Gelap:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sidebarThemeToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="sidebarThemeStatus" class="status-text text-red-600 dark:text-red-400">Nonaktif</span>
+            </div>
+
+            <!-- New High Contrast Mode Toggle -->
+            <div class="sidebar-setting">
+                <span>Mode Kontras Tinggi:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sidebarHighContrastToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="sidebarHighContrastStatus" class="status-text text-red-600 dark:text-red-400">Nonaktif</span>
+            </div>
+
+            <!-- New Font Size Adjustment -->
+            <div class="sidebar-setting">
+                <span>Ukuran Font:</span>
+                <div class="flex items-center space-x-2">
+                    <button id="decreaseFontSizeBtn" class="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-bold text-lg">A-</button>
+                    <span id="currentFontSize" class="font-semibold">Normal</span>
+                    <button id="increaseFontSizeBtn" class="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded-md font-bold text-lg">A+</button>
+                </div>
+            </div>
+
+            <!-- New Focus Mode Toggle -->
+            <div class="sidebar-setting">
+                <span>Mode Fokus:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sidebarFocusModeToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="sidebarFocusModeStatus" class="status-text text-red-600 dark:text-red-400">Nonaktif</span>
+            </div>
+
+            <div class="sidebar-setting">
+                <span>Sensor Pencarian:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sidebarSearchSensorToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="sidebarSensorStatus" class="status-text text-green-600 dark:text-green-400">Aktif</span>
+            </div>
+
+            <div class="sidebar-setting">
+                <span>Mode Anak-anak:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sidebarKidsModeToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="sidebarKidsModeStatus" class="status-text text-red-600 dark:text-red-400">Nonaktif</span>
+            </div>
+
+            <div class="sidebar-setting">
+                <span>Pilih Background:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sidebarBackgroundToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="sidebarBackgroundStatus" class="status-text text-red-600 dark:text-red-400">Nonaktif</span>
+            </div>
+
+            <!-- New Particle Effect Toggle and Picker Button -->
+            <div class="sidebar-setting">
+                <span>Efek Partikel:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sidebarParticleEffectToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="sidebarParticleEffectStatus" class="status-text text-red-600 dark:text-red-400">Nonaktif</span>
+            </div>
+            <button id="openParticlePickerBtn" class="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-md transition-colors w-full mt-2" disabled>
+                Pilih Partikel
+            </button>
+
+
+            <!-- New Gemini Search Toggle -->
+            <div class="sidebar-setting">
+                <span>Pencarian Gemini:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sidebarGeminiSearchToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="sidebarGeminiSearchStatus" class="status-text text-red-600 dark:text-red-400">Nonaktif</span>
+            </div>
+
+            <!-- New Incognito Mode Toggle -->
+            <div class="sidebar-setting">
+                <span>Mode Samaran:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sidebarIncognitoModeToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="sidebarIncognitoModeStatus" class="status-text text-red-600 dark:text-red-400">Nonaktif</span>
+            </div>
+
+            <!-- New Search Saver Toggle -->
+            <div class="sidebar-setting">
+                <span>Penghemat Pencarian:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="sidebarSearchSaverToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span id="sidebarSearchSaverStatus" class="status-text text-red-600 dark:text-red-400">Nonaktif</span>
+            </div>
+
+            <!-- Custom Search Engine Section -->
+            <div class="mt-8 pt-4 border-t border-gray-600">
+                <div class="sidebar-setting !py-0 !border-b-0">
+                    <h3 class="text-2xl font-bold">Mesin Pencari Kustom</h3>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="sidebarCustomSearchToggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span id="sidebarCustomSearchStatus" class="status-text text-red-600 dark:text-red-400">Nonaktif</span>
+                </div>
+
+                <div id="customSearchControls" class="flex flex-col gap-3 mt-4">
+                    <input type="text" id="customEngineName" placeholder="Nama Mesin (e.g., MySite)" class="w-full px-4 py-2 text-md border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500">
+                    <input type="text" id="customEngineUrl" placeholder="URL Mesin (e.g., https://mysite.com/search?q=)" class="w-full px-4 py-2 text-md border border-gray-600 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500">
+                    <button id="addCustomEngineBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors">
+                        Tambah Mesin Kustom
+                    </button>
+                    <div id="customEnginesList" class="mt-4 space-y-2">
+                        <!-- Custom engines will be listed here -->
+                        <p class="text-gray-400 text-sm">Belum ada mesin kustom.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search History Section -->
+            <div class="mt-8 pt-4 border-t border-gray-600">
+                <h3 class="text-2xl font-bold mb-4">Riwayat Pencarian</h3>
+                <ul id="searchHistoryList" class="search-history-list">
+                    <!-- Search history items will be populated here by JavaScript -->
+                    <li class="text-gray-400 text-sm">Belum ada riwayat pencarian.</li>
+                </ul>
+                <button id="clearHistoryBtn" class="clear-history-btn">Hapus Riwayat</button>
+            </div>
+        </div>
+
+        <!-- Main content area continues below... -->
+        <div class="flex-grow">
+            <!-- EasySearch Section -->
+            <div id="easySearchSection" class="container mx-auto px-4 -mt-6">
+                <div class="main-content-card rounded-2xl shadow-xl p-8 max-w-4xl mx-auto">
+                    <div class="flex flex-col md:flex-row gap-4 items-center">
+                        <div class="flex-1 flex items-center gap-2">
+                            <input
+                                type="text"
+                                id="mainSearchInput"
+                                placeholder="Masukkan kata kunci pencarian..."
+                                class="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors"
+                                onkeypress="handleMainKeyPress(event)"
+                            >
+                            <button
+                                id="voiceSearchBtn"
+                                class="voice-search-button"
+                                title="Pencarian Suara"
+                            >
+                                <!-- Microphone Icon (SVG from Heroicons, similar to Tailwind's default) -->
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75V21m-7.5-1.5h15M12 12.75a3 3 0 110-6 3 3 0 010 6zM12 18a6 6 0 006-6V6a6 6 0 00-6-6 6 6 0 00-6 6v6a6 6 0 006 6z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <button
+                            onclick="handleMainButtonAction()"
+                            class="search-button text-white px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 min-w-[140px]"
+                            id="searchButton"
+                        >
+                            <span id="buttonText">Cari</span>
+                            <div id="loadingSpinner" class="loading-spinner hidden"></div>
+                        </button>
+                    </div>
+
+                    <!-- Visual Search Input and Button - Moved inside main-content-card -->
+                    <div id="geminiVisualSearchControls" class="flex flex-col md:flex-row gap-4 items-center mt-4 hidden">
+                        <input type="file" id="imageUploadInput" accept="image/*" class="w-full px-4 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none transition-colors dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                        <button
+                            id="visualSearchBtn"
+                            class="search-button text-white px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 min-w-[140px] opacity-50 cursor-not-allowed"
+                            disabled
+                        >
+                            <span id="visualButtonText">Pencarian Visual</span>
+                            <div id="visualLoadingSpinner" class="loading-spinner hidden"></div>
+                        </button>
+                    </div>
+                    <div id="uploadedImagePreviewContainer" class="mt-4 hidden">
+                        <p class="text-gray-700 dark:text-gray-300 mb-2 text-center">Gambar Terunggah:</p>
+                        <img id="uploadedImagePreview" src="" alt="Pratinjau Gambar" class="max-w-xs max-h-48 rounded-lg shadow-md mx-auto">
+                        <button id="clearImageBtn" class="mt-2 bg-red-500 hover:bg-red-600 text-white text-sm px-3 py-1 rounded-md block mx-auto">Hapus Gambar</button>
+                    </div>
+
+                    <!-- Search Engine Options -->
+                    <div class="mt-6 flex flex-wrap gap-3 justify-center" id="searchEngineOptions">
+                        <!-- Search engine buttons will be dynamically populated here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Intent Display -->
+            <div id="searchIntentDisplay" class="container mx-auto px-4 max-w-4xl mx-auto hidden">
+                <!-- Search intent will be displayed here -->
+            </div>
+
+            <!-- Quick Search Suggestions -->
+            <div class="container mx-auto px-4 mt-8" id="quickSearchSuggestions">
+                <div class="max-w-4xl mx-auto">
+                    <div class="main-content-card rounded-2xl shadow-xl p-6">
+                        <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center" id="quickSearchTitle">Pencarian Populer</h2>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="quickSearchButtons">
+                            <!-- Quick search buttons will be dynamically populated here by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search Results Demo -->
+            <div id="searchResults" class="container mx-auto px-4 mt-8 hidden">
+                <div class="max-w-4xl mx-auto">
+                    <div class="main-content-card rounded-2xl shadow-xl p-6">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Hasil Pencarian</h3>
+                        <div class="space-y-4" id="resultsContainer">
+                            <!-- Results will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-16 bg-gray-800 text-white py-8">
+            <div class="container mx-auto px-4 text-center flex flex-col sm:flex-row justify-center items-center gap-4">
+                <p class="text-gray-300">© 2024 EasySearch</p>
+                <p class="text-sm text-gray-400 mt-2 sm:mt-0">Mencari informasi dengan mudah dan cepat</p>
+                <div class="flex items-center mt-2 sm:mt-0">
+                    <span id="loggedInUserDisplay" class="text-white font-semibold"></span>
+                    <button id="logoutButton" class="hidden bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold ml-4">Logout</button>
+                </div>
+            </div>
+        </footer>
+    </div> <!-- End of mainContentWrapper -->
+
+    <!-- Background Picker Modal -->
+    <div id="backgroundPickerModal" class="background-picker-modal">
+        <div class="background-picker-content">
+            <button class="background-picker-close-btn" id="backgroundPickerCloseBtn">&times;</button>
+            <h2 class="text-2xl font-bold mb-4 text-center">Pilih Background</h2>
+            <div id="backgroundGrid" class="background-grid">
+                <!-- Background items will be populated here -->
+            </div>
+            <div class="text-center mt-6">
+                <button onclick="applySelectedBackground()" class="search-button text-white px-8 py-3 rounded-xl font-semibold text-lg">
+                    Terapkan Background
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Particle Picker Modal -->
+    <div id="particlePickerModal" class="particle-picker-modal">
+        <div class="particle-picker-content">
+            <button class="particle-picker-close-btn" id="particlePickerCloseBtn">&times;</button>
+            <h2 class="text-2xl font-bold mb-4 text-center">Pilih Partikel</h2>
+            <div id="particleGrid" class="particle-grid">
+                <!-- Particle items will be populated here -->
+            </div>
+            <div class="text-center mt-6">
+                <button id="applySelectedParticlesBtn" class="search-button text-white px-8 py-3 rounded-xl font-semibold text-lg">
+                    Terapkan Partikel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Article Summary Modal -->
+    <div id="articleSummaryModal" class="article-summary-modal-overlay">
+        <div class="article-summary-content">
+            <button class="article-summary-close-btn" id="articleSummaryCloseBtn">&times;</button>
+            <h2 class="text-2xl font-bold mb-4" id="summaryModalTitle">Ringkasan Artikel</h2>
+            <div id="summaryModalContent" class="text-base leading-relaxed">
+                <!-- Summary content will be loaded here -->
+                <div class="article-summary-loading">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-2 text-gray-600 dark:text-gray-300">Membuat ringkasan...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Variables ---
+        let currentSearchEngine = 'google';
+        let isSearchSensorEnabled = true;
+        let isKidsModeEnabled = false;
+        let lastSearchSensorState = true;
+        let lastSearchSensorStateBeforeIncognito = true;
+        let lastKidsModeStateBeforeIncognito = false;
+        let isBackgroundSelectionMode = false;
+        let selectedBackground = '';
+        let recognition;
+        let isGeminiSearchEnabled = false;
+        let isIncognitoModeEnabled = false;
+        let isCustomSearchEnabled = false; // New: Custom Search Mode state
+        let isSearchSaverEnabled = false; // New: Search Saver Mode state
+        let searchHistory = [];
+        let isHighContrastModeEnabled = false; // New: High Contrast Mode state
+        const fontSizes = ['0.9rem', '1rem', '1.1rem', '1.2rem', '1.3rem']; // New: Font sizes array
+        let currentFontSizeIndex = 1; // New: Default to '1rem' (index 1)
+        let isFocusModeEnabled = false; // New: Focus Mode state
+        let uploadedImageBase64 = null; // New: Stores base64 of uploaded image
+        let isParticleEffectEnabled = false; // New: Particle effect state
+        let selectedParticles = ['✨']; // New: Default selected particles
+
+        // Bot Test Variables
+        let botTestClickCount = 0;
+        const botTestRequiredClicks = 4;
+        let botTestTypingStartTime = 0;
+        const botTestRequiredWords = ["easy", "search"];
+        const botTestMinTypingTime = 2000;
+        const botTestMaxTypingTime = 10000;
+
+        // Login Variables
+        let isLoggedIn = false;
+        let loggedInUser = null; // Stores { account: '...', age: ... }
+        let isKidsModeForcedByAge = false; // New flag for age-based kids mode
+
+
+        // Inisialisasi Gemini API
+        const API_KEY = "AIzaSyD_IrDX48wddrp25b9E2inNzEZpLFw95sY"; // Pastikan ini adalah kunci API Gemini Anda
+        let geminiModel;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.GoogleGenerativeAI) {
+                const genAI = new window.GoogleGenerativeAI(API_KEY);
+                geminiModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            } else {
+                console.error("GoogleGenerativeAI SDK tidak dimuat. Pastikan koneksi internet Anda stabil.");
+            }
+        });
+
+        // Default search engines
+        const defaultSearchEngines = {
+            google: { name: 'Google', url: 'https://www.google.com/search?q=', icon: '🌐' },
+            bing: { name: 'Bing', url: 'https://www.bing.com/search?q=', icon: '🔍' },
+            duckduckgo: { name: 'DuckDuckGo', url: 'https://duckduckgo.com/?q=', icon: '🦆' },
+            yahoo: { name: 'Yahoo', url: 'https://search.yahoo.com/search?p=', icon: '💜' },
+            ecosia: { name: 'Ecosia', url: 'https://www.ecosia.org/search?q=', icon: '🌳' },
+            yandex: { name: 'Yandex', url: 'https://yandex.com/search/?text=', icon: '🇷🇺' },
+            startpage: { name: 'Startpage', url: 'https://www.startpage.com/do/dsearch?query=', icon: '✨' },
+            youcom: { name: 'You.com', url: 'https://you.com/search?q=', icon: '👤' },
+            baidu: { name: 'Baidu', url: 'https://www.baidu.com/s?wd=', icon: '🇨🇳' },
+            naver: { name: 'Naver', url: 'https://search.naver.com/search.naver?query=', icon: '🇰🇷' }
+        };
+
+        // Combined search engines (default + custom)
+        let allSearchEngines = { ...defaultSearchEngines };
+        // Engines to display based on Search Saver mode
+        const searchSaverEngines = {
+            google: { name: 'Google', url: 'https://www.google.com/search?q=', icon: '🌐' },
+            yahoo: { name: 'Yahoo', url: 'https://search.yahoo.com/search?p=', icon: '💜' },
+            bing: { name: 'Bing', url: 'https://www.bing.com/search?q=', icon: '🔍' }
+        };
+
+        const forbiddenKeywords = [
+            'porn', 'sex', 'hentai', 'xxx', 'bokep', 'mesum', 'nude', 'bugil', 'telanjang',
+            'judi', 'gambling', 'casino', 'togel', 'slot online', 'poker online',
+            'narkoba', 'drugs', 'kokain', 'ganja', 'heroin', 'sabu',
+            'kekerasan', 'gore', 'sadis', 'mutilasi', 'pembunuhan',
+            'terorisme', 'bom', 'radikal', 'ekstremis',
+            'penipuan', 'scam', 'phishing', 'hack', 'crack', 'bajakan', 'warez',
+            'child abuse', 'pedofilia', 'anak di bawah umur',
+            'bunuh diri', 'suicide', 'self harm'
+        ];
+
+        const normalQuickSearches = [
+            { icon: '📰', text: 'Berita Terkini', query: 'berita terkini' },
+            { icon: '🌤️', text: 'Cuaca Hari Ini', query: 'cuaca hari ini' },
+            { icon: '🍳', text: 'Resep Masakan', query: 'resep masakan' },
+            { icon: '💻', text: 'Tutorial Programming', query: 'tutorial programming' },
+            { icon: '📺', text: 'Anime Terbaru', query: 'anime terbaru' }
+        ];
+
+        const kidsQuickSearches = [
+            { icon: '📚', text: 'Cerita Anak', query: 'cerita anak edukasi' },
+            { icon: '🎨', text: 'Belajar Menggambar', query: 'tutorial menggambar anak' },
+            { icon: '🔢', text: 'Permainan Angka', query: 'permainan edukasi angka' },
+            { icon: '🧪', text: 'Eksperimen Sains', query: 'eksperimen sains sederhana anak' },
+            { icon: '🎵', text: 'Lagu Anak-anak', query: 'lagu anak-anak edukasi' }
+        ];
+
+        const backgrounds = [
+            { id: 'bg1', name: 'Langit Biru', value: '#87CEEB' },
+            { id: 'bg2', name: 'Hutan Hijau', value: '#228B22' },
+            { id: 'bg3', name: 'Pegunungan Salju', value: 'linear-gradient(135deg, #B0E0E6 0%, #778899 100%)' },
+            { id: 'bg4', name: 'Pantai Tropis', value: 'linear-gradient(135deg, #00CED1 0%, #4682B4 100%)' },
+            { id: 'bg5', name: 'Kota Malam', value: '#2F4F4F' },
+            { id: 'bg6', name: 'Ruang Angkasa', value: 'linear-gradient(135deg, #191970 0%, #483D8B 100%)' },
+            { id: 'bg7', name: 'Padang Bunga', value: '#FFD700' },
+            { id: 'bg8', name: 'Abstrak Geometris', value: 'linear-gradient(135deg, #8A2BE2 0%, #4B0082 100%)' },
+            { id: 'bg9', name: 'Tekstur Kayu', value: '#A0522D' },
+            { id: 'bg10', name: 'Awan Cerah', value: 'linear-gradient(135deg, #ADD8E6 0%, #87CEEB 100%)' },
+            { id: 'bg11', name: 'Gurun Pasir', value: '#F4A460' },
+            { id: 'none', name: 'Tidak Ada Background', value: '' }
+        ];
+
+        // New: Particle Emojis and selection logic
+        const allAvailableParticles = [
+            '✨', '🌟', '💖', '🚀', '💡', '🌈', '🌺', '💧', ' ', '🔥', '💫', '💯', '✅', '❌',
+            '💡', '📚', '🧠', '💡', '✏️', '📐', '🧪', '🎵', '🎨', '🧩', '🏆', '🥇', '🥈', '🥉',
+            '🍎', '🍊', '🍋', '🍉', '🍇', '🍓', '🍒', '🍑', '🍍', '🥭', '🥝', '🥥', '🥑',
+            '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷',
+            '🌞', '☁️', '⚡️', '☔️', '☃️', '🌈', '🌊', '🌳', '🌸', '🍂', '🍁', '🌍', '🌕', '⭐️'
+        ];
+        // Temporary array for selecting particles within the modal
+        let tempSelectedParticles = [];
+
+
+        /**
+         * Loads custom search engines from localStorage and merges them with default engines.
+         */
+        function loadCustomSearchEngines() {
+            const customEngines = JSON.parse(localStorage.getItem('customSearchEngines') || '{}');
+            if (isCustomSearchEnabled) {
+                allSearchEngines = { ...defaultSearchEngines, ...customEngines };
+            } else {
+                allSearchEngines = { ...defaultSearchEngines }; // Only use defaults if custom search is off
+            }
+            renderSearchEngineButtons();
+        }
+
+        /**
+         * Renders the search engine buttons based on `allSearchEngines`.
+         */
+        function renderSearchEngineButtons() {
+            const searchEngineOptions = document.getElementById('searchEngineOptions');
+            searchEngineOptions.innerHTML = ''; // Clear existing buttons
+
+            let enginesToRender = {};
+            if (isSearchSaverEnabled) {
+                enginesToRender = { ...searchSaverEngines }; // Only allowed engines in Search Saver mode
+            } else {
+                enginesToRender = { ...allSearchEngines }; // All engines if Search Saver is off
+            }
+
+            for (const key in enginesToRender) {
+                const engine = enginesToRender[key];
+                const button = document.createElement('button');
+                button.setAttribute('onclick', `setSearchEngine('${key}')`);
+                button.className = `search-engine-btn px-4 py-2 rounded-lg hover:bg-opacity-80 transition-colors`;
+                button.dataset.engine = key; // Add data-engine attribute
+
+                // Assign specific colors based on default engines or a generic for custom
+                let bgColorClass = 'bg-gray-100';
+                let textColorClass = 'text-gray-700';
+
+                // Check if the engine key exists in defaultSearchEngines to apply specific colors
+                if (defaultSearchEngines.hasOwnProperty(key)) {
+                    switch (key) {
+                        case 'google': bgColorClass = 'bg-blue-100'; textColorClass = 'text-blue-700'; break;
+                        case 'bing': bgColorClass = 'bg-green-100'; textColorClass = 'text-green-700'; break;
+                        case 'duckduckgo': bgColorClass = 'bg-orange-100'; textColorClass = 'text-orange-700'; break;
+                        case 'yahoo': bgColorClass = 'bg-purple-100'; textColorClass = 'text-purple-700'; break;
+                        case 'ecosia': bgColorClass = 'bg-lime-100'; textColorClass = 'text-lime-700'; break;
+                        case 'yandex': bgColorClass = 'bg-red-100'; textColorClass = 'text-red-700'; break;
+                        case 'startpage': bgColorClass = 'bg-indigo-100'; textColorClass = 'text-indigo-700'; break;
+                        case 'youcom': bgColorClass = 'bg-pink-100'; textColorClass = 'text-pink-700'; break;
+                        case 'baidu': bgColorClass = 'bg-yellow-100'; textColorClass = 'text-yellow-700'; break;
+                        case 'naver': bgColorClass = 'bg-gray-100'; textColorClass = 'text-gray-700'; break;
+                    }
+                } else { // For custom engines
+                    bgColorClass = 'bg-gray-600'; // Darker gray for custom
+                    textColorClass = 'text-white';
+                }
+
+                button.classList.add(bgColorClass, textColorClass);
+
+                if (currentSearchEngine === key) {
+                    button.classList.add('active');
+                }
+
+                button.innerHTML = `${engine.icon || '⚙️'} ${engine.name}`;
+                searchEngineOptions.appendChild(button);
+            }
+            renderCustomEnginesList(); // Update the list in the sidebar
+        }
+
+
+        /**
+         * Sets the active search engine for the main search functionality.
+         * @param {string} engineKey - The key of the search engine.
+         */
+        function setSearchEngine(engineKey) {
+            let targetEngineExists = false;
+            if (isSearchSaverEnabled) {
+                targetEngineExists = searchSaverEngines.hasOwnProperty(engineKey);
+            } else {
+                targetEngineExists = allSearchEngines.hasOwnProperty(engineKey);
+            }
+
+            if (!targetEngineExists) {
+                // Fallback to a default if the selected engine is no longer available
+                // (e.g., custom engine was disabled or Search Saver is active)
+                currentSearchEngine = 'google';
+                showAlert('Mesin pencari yang dipilih tidak tersedia lagi. Beralih ke Google.', 'Peringatan');
+            } else {
+                currentSearchEngine = engineKey;
+            }
+
+            document.querySelectorAll('.search-engine-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.engine === currentSearchEngine) {
+                    btn.classList.add('active');
+                }
+            });
+            // Re-render buttons to ensure active state is correctly applied
+            renderSearchEngineButtons();
+        }
+
+        /**
+         * Handles Enter key press in the main search input.
+         * @param {Event} event - The keypress event.
+         */
+        function handleMainKeyPress(event) {
+            if (event.key === 'Enter') {
+                handleMainButtonAction();
+            }
+        }
+
+        /**
+         * Handles the action of the main button (Search or Choose Background).
+         */
+        function handleMainButtonAction() {
+            if (isBackgroundSelectionMode) {
+                openBackgroundPicker();
+            } else if (isGeminiSearchEnabled) { // If Gemini search is enabled
+                if (uploadedImageBase64) { // And an image is uploaded
+                    handleVisualSearch(); // Perform visual search with Gemini
+                } else { // No image, but Gemini is enabled
+                    performGeminiSearch(document.getElementById('mainSearchInput').value.trim()); // Perform text-based Gemini search
+                }
+            } else { // Gemini search is not enabled
+                performSearch(); // Fallback to regular web search
+            }
+        }
+
+        /**
+         * Performs the main search using the selected search engine or Gemini.
+         */
+        async function performSearch() {
+            const query = document.getElementById('mainSearchInput').value.trim();
+            if (!query) {
+                showAlert('Silakan masukkan kata kunci pencarian!', 'Peringatan');
+                return;
+            }
+
+            if (isSearchSensorEnabled && containsForbiddenKeywords(query)) {
+                showAlert('Pencarian Anda mengandung kata kunci yang tidak diizinkan. Silakan coba kata kunci lain.', 'Pencarian Dibatalkan');
+                return;
+            }
+
+            showLoading(true);
+            clearSearchIntentDisplay(); // Clear previous intent
+
+            // Detect search intent first
+            const intent = await detectSearchIntent(query);
+            displaySearchIntent(intent);
+
+            // This function is now only for non-Gemini (traditional web) searches
+            setTimeout(() => {
+                showLoading(false);
+                let engineUrl;
+                if (isSearchSaverEnabled) {
+                    engineUrl = searchSaverEngines[currentSearchEngine]?.url;
+                } else {
+                    engineUrl = allSearchEngines[currentSearchEngine]?.url;
+                }
+
+                if (engineUrl) {
+                    const searchUrl = engineUrl + encodeURIComponent(query);
+                    window.open(searchUrl, '_blank');
+                    showDemoResults(query);
+                    if (!isIncognitoModeEnabled) {
+                        saveSearchQuery(query);
+                    }
+                } else {
+                    showAlert('Mesin pencari tidak ditemukan. Silakan pilih mesin pencari yang valid.', 'Kesalahan');
+                }
+            }, 1000);
+        }
+
+        /**
+         * Performs a text-based search using the Gemini API.
+         * @param {string} query - The search query for Gemini.
+         */
+        async function performGeminiSearch(query) {
+            const resultsContainer = document.getElementById('resultsContainer');
+            const searchResultsSection = document.getElementById('searchResults');
+            resultsContainer.innerHTML = '';
+
+            if (!geminiModel) {
+                showAlert("Gemini API tidak diinisialisasi. Periksa konsol untuk detail.", "Kesalahan Gemini");
+                showLoading(false);
+                return;
+            }
+
+            try {
+                const prompt = `Berikan informasi yang komprehensif dan ringkas tentang "${query}". Sertakan poin-poin penting, definisi, dan fakta relevan. Format sebagai teks biasa, tanpa markdown judul atau daftar.`;
+
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                const apiKey = API_KEY;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const geminiText = result.candidates[0].content.parts[0].text;
+
+                    resultsContainer.innerHTML = `
+                        <div class="gemini-result-card">
+                            <h4 class="text-xl font-semibold mb-3">Hasil dari Gemini AI untuk "${query}"</h4>
+                            <p>${geminiText}</p>
+                        </div>
+                    `;
+                    searchResultsSection.classList.remove('hidden');
+                    searchResultsSection.scrollIntoView({ behavior: 'smooth' });
+
+                    if (!isIncognitoModeEnabled) {
+                        saveSearchQuery(query);
+                    }
+
+                } else {
+                    showAlert("Tidak dapat menghasilkan respons dari Gemini. Coba lagi.", "Kesalahan Gemini");
+                    console.error("Struktur respons Gemini API tidak terduga:", result);
+                }
+            } catch (error) {
+                console.error("Kesalahan saat memanggil Gemini API:", error);
+                showAlert(`Terjadi kesalahan saat menghubungi Gemini API: ${error.message}`, "Kesalahan API");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        /**
+         * Detects the search intent using Gemini API.
+         * @param {string} query - The search query.
+         * @returns {Promise<string>} - The detected intent.
+         */
+        async function detectSearchIntent(query) {
+            if (!geminiModel) {
+                console.error("Gemini API tidak diinisialisasi untuk deteksi niat.");
+                return 'Tidak diketahui';
+            }
+
+            const prompt = `Klasifikasikan niat pencarian dari kueri berikut ke dalam salah satu kategori ini: Informasional, Transaksional, Navigasional, Investigasi Komersial. Berikan hanya satu kata kategorinya. Jika tidak yakin, jawab 'Informasional'. Kueri: "${query}"`;
+
+            try {
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                const apiKey = API_KEY;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    let intent = result.candidates[0].content.parts[0].text.trim();
+                    // Clean up potential extra text from Gemini
+                    if (intent.includes(':')) {
+                        intent = intent.split(':').pop().trim();
+                    }
+                    if (intent.includes('.')) {
+                        intent = intent.replace('.', '').trim();
+                    }
+                    return intent;
+                }
+            } catch (error) {
+                console.error("Kesalahan saat mendeteksi niat pencarian dengan Gemini:", error);
+            }
+            return 'Tidak diketahui';
+        }
+
+        /**
+         * Displays the detected search intent.
+         * @param {string} intent - The detected intent.
+         */
+        function displaySearchIntent(intent) {
+            const intentDisplay = document.getElementById('searchIntentDisplay');
+            if (intent && intent !== 'Tidak diketahui') {
+                intentDisplay.textContent = `Niat Pencarian: ${intent}`;
+                intentDisplay.classList.remove('hidden');
+            } else {
+                intentDisplay.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Clears the search intent display.
+         */
+        function clearSearchIntentDisplay() {
+            document.getElementById('searchIntentDisplay').classList.add('hidden');
+            document.getElementById('searchIntentDisplay').textContent = '';
+        }
+
+
+        /**
+         * Checks if the query contains any forbidden keywords.
+         * @param {string} query - The search query.
+         * @returns {boolean} - True if forbidden keywords are found, false otherwise.
+         */
+        function containsForbiddenKeywords(query) {
+            const lowerCaseQuery = query.toLowerCase();
+            return forbiddenKeywords.some(keyword => lowerCaseQuery.includes(keyword));
+        }
+
+        /**
+         * Function for quick search suggestions in the main search section.
+         * @param {string} query - The predefined search query.
+         */
+        function quickSearch(query) {
+            document.getElementById('mainSearchInput').value = query;
+            handleMainButtonAction(); // Use the main action handler
+        }
+
+        /**
+         * Shows/hides the loading spinner for the main search button.
+         * @param {boolean} isLoading - True to show loading, false to hide.
+         */
+        function showLoading(isLoading) {
+            const button = document.getElementById('searchButton');
+            const buttonText = document.getElementById('buttonText');
+            const spinner = document.getElementById('loadingSpinner');
+            const mainSearchInput = document.getElementById('mainSearchInput');
+            const visualSearchBtn = document.getElementById('visualSearchBtn'); // Get visual search button
+
+            if (isLoading) {
+                buttonText.textContent = 'Mencari...';
+                spinner.classList.remove('hidden');
+                button.disabled = true;
+                mainSearchInput.disabled = true;
+                visualSearchBtn.disabled = true; // Disable visual search button
+            } else {
+                if (isBackgroundSelectionMode) {
+                    buttonText.textContent = 'Pilih Background';
+                } else {
+                    buttonText.textContent = 'Cari';
+                }
+                spinner.classList.add('hidden');
+                button.disabled = false;
+                mainSearchInput.disabled = false;
+                // Only enable visual search button if Gemini is enabled AND an image is uploaded
+                visualSearchBtn.disabled = !(isGeminiSearchEnabled && uploadedImageBase64);
+            }
+        }
+
+        /**
+         * Displays demo search results in the dedicated section.
+         * @param {string} query - The search query for which to show demo results.
+         */
+        function showDemoResults(query) {
+            const resultsSection = document.getElementById('searchResults');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            let sampleResults;
+            if (isKidsModeEnabled) {
+                sampleResults = [
+                    {
+                        title: `Belajar tentang "${query}" untuk anak-anak`,
+                        url: 'https://edukasi.com/anak/' + encodeURIComponent(query.replace(/\s/g, '-')),
+                        description: `Video dan permainan interaktif yang menyenangkan untuk membantu anak-anak memahami ${query}.`
+                    },
+                    {
+                        title: `Dongeng "${query}" yang mendidik`,
+                        url: 'https://dongenganak.com/cerita/' + encodeURIComponent(query.replace(/\s/g, '-')),
+                        description: `Kumpulan dongeng dan cerita bergambar tentang ${query} untuk meningkatkan minat baca anak.`
+                    },
+                    {
+                        title: `Worksheet dan aktivitas "${query}"`,
+                        url: 'https://belajaranak.org/aktivitas/' + encodeURIComponent(query.replace(/\s/g, '-')),
+                        description: `Lembar kerja yang bisa dicetak dan ide aktivitas kreatif bertema ${query} untuk belajar di rumah.`
+                    }
+                ];
+            } else {
+                sampleResults = [
+                    {
+                        title: `Hasil terbaik untuk "${query}"`,
+                        url: 'https://example.com/result1',
+                        description: `Informasi lengkap dan terpercaya tentang ${query}. Temukan jawaban yang Anda cari dengan penjelasan detail dan mudah dipahami. Ini adalah contoh teks artikel yang panjang untuk tujuan demonstrasi ringkasan. Artikel ini bisa membahas berbagai topik, mulai dari sejarah, sains, teknologi, hingga budaya. Tujuannya adalah untuk menunjukkan bagaimana fitur ringkasan dapat bekerja pada konten yang lebih substansial, meskipun dalam demo ini, kontennya adalah teks statis. Dalam aplikasi nyata, teks ini akan diambil dari halaman web yang sebenarnya. Fitur ini sangat berguna untuk pengguna yang ingin mendapatkan inti dari sebuah artikel tanpa harus membaca keseluruhan teks, menghemat waktu dan usaha.`,
+                    },
+                    {
+                        title: `Panduan lengkap ${query}`,
+                        url: 'https://example.com/result2',
+                        description: `Tutorial step-by-step dan tips praktis mengenai ${query}. Cocok untuk pemula maupun yang sudah berpengalaman. Dokumen panduan ini mencakup langkah-langkah detail, contoh penggunaan, dan tips ahli untuk menguasai topik ${query}. Kami telah menyusun informasi ini agar mudah dicerna dan diterapkan, baik bagi pemula maupun pengguna tingkat lanjut. Pelajari cara mengoptimalkan penggunaan ${query} dalam berbagai skenario dan temukan solusi untuk masalah umum.`
+                    },
+                    {
+                        title: `${query} - Wikipedia`,
+                        url: 'https://wikipedia.org/wiki/result',
+                        description: `Artikel ensiklopedia yang komprehensif tentang ${query} dengan referensi dan sumber yang dapat dipercaya. Wikipedia adalah sumber informasi kolaboratif terbesar di dunia, mencakup jutaan artikel dalam berbagai bahasa. Artikel ini memberikan gambaran umum yang mendalam tentang ${query}, termasuk definisi, sejarah, perkembangan, dan relevansinya di dunia modern. Anda dapat menemukan tautan ke sumber-sumber eksternal untuk penelitian lebih lanjut.`
+                    }
+                ];
+            }
+
+            resultsContainer.innerHTML = sampleResults.map(result => `
+                <div class="result-card bg-gray-50 p-4 rounded-lg flex flex-col">
+                    <h4 class="text-lg font-semibold text-blue-600 hover:text-blue-800 cursor-pointer mb-1">
+                        ${result.title}
+                    </h4>
+                    <p class="text-green-600 text-sm mb-2">${result.url}</p>
+                    <p class="text-gray-700 text-sm leading-relaxed flex-grow">${result.description.substring(0, 200)}...</p>
+                    <div class="mt-3 flex justify-end">
+                        <button onclick="showArticleSummary('${encodeURIComponent(result.title)}', '${encodeURIComponent(result.url)}', '${encodeURIComponent(result.description)}')"
+                                class="bg-purple-500 hover:bg-purple-600 text-white text-sm px-3 py-1 rounded-md">
+                            Ringkas Artikel
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            resultsSection.classList.remove('hidden');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /**
+         * Shows the article summary modal and generates summary using Gemini.
+         * @param {string} title - The title of the article.
+         * @param {string} url - The URL of the article.
+         * @param {string} content - The content (or description) to summarize.
+         */
+        async function showArticleSummary(title, url, content) {
+            title = decodeURIComponent(title);
+            url = decodeURIComponent(url);
+            content = decodeURIComponent(content);
+
+            const modal = document.getElementById('articleSummaryModal');
+            const modalTitle = document.getElementById('summaryModalTitle');
+            const modalContent = document.getElementById('summaryModalContent');
+
+            modalTitle.textContent = `Ringkasan: ${title}`;
+            modalContent.innerHTML = `
+                <div class="article-summary-loading">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-2 text-gray-600 dark:text-gray-300">Membuat ringkasan...</p>
+                </div>
+            `;
+            modal.classList.add('active');
+
+            if (!geminiModel) {
+                modalContent.innerHTML = '<p class="text-red-500">Gemini API tidak diinisialisasi. Tidak dapat membuat ringkasan.</p>';
+                return;
+            }
+
+            try {
+                // Use the provided 'content' (which is the demo description) for summarization
+                const prompt = `Ringkas teks berikut menjadi 3-5 poin penting yang ringkas dan mudah dipahami. Teks: "${content}"`;
+
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+                const apiKey = API_KEY;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const summaryText = result.candidates[0].content.parts[0].text;
+                    modalContent.innerHTML = `<p>${summaryText}</p><p class="mt-4 text-sm text-gray-500 dark:text-gray-400">Sumber: <a href="${url}" target="_blank" class="text-blue-600 hover:underline">${url}</a></p>`;
+                } else {
+                    modalContent.innerHTML = '<p class="text-red-500">Tidak dapat membuat ringkasan. Coba lagi.</p>';
+                    console.error("Struktur respons Gemini API tidak terduga untuk ringkasan:", result);
+                }
+            } catch (error) {
+                console.error("Kesalahan saat memanggil Gemini API untuk ringkasan:", error);
+                modalContent.innerHTML = `<p class="text-red-500">Terjadi kesalahan saat membuat ringkasan: ${error.message}</p>`;
+            }
+        }
+
+        /**
+         * Closes the article summary modal.
+         */
+        function closeArticleSummaryModal() {
+            document.getElementById('articleSummaryModal').classList.remove('active');
+        }
+
+
+        /**
+         * Updates the quick search suggestions based on Kids Mode status and Search Saver status.
+         */
+        function updateQuickSearchSuggestions() {
+            const quickSearchButtonsContainer = document.getElementById('quickSearchButtons');
+            const quickSearchTitle = document.getElementById('quickSearchTitle');
+            const quickSearchSuggestionsSection = document.getElementById('quickSearchSuggestions');
+
+            if (isSearchSaverEnabled) { // Hide if Search Saver is active
+                quickSearchSuggestionsSection.classList.add('hidden');
+                return;
+            } else {
+                quickSearchSuggestionsSection.classList.remove('hidden'); // Show otherwise
+            }
+
+            let suggestionsToUse = isKidsModeEnabled ? kidsQuickSearches : normalQuickSearches;
+
+            quickSearchTitle.textContent = isKidsModeEnabled ? 'Rekomendasi Edukasi Anak' : 'Pencarian Populer';
+            quickSearchButtonsContainer.innerHTML = '';
+
+            suggestionsToUse.forEach(item => {
+                const button = document.createElement('button');
+                button.className = 'bg-white p-4 rounded-xl shadow-md hover:shadow-lg transition-shadow text-center';
+                if (document.body.classList.contains('dark-mode')) {
+                    button.classList.add('dark:bg-gray-700', 'dark:text-gray-100');
+                } else {
+                    button.classList.remove('dark:bg-gray-700', 'dark:text-gray-100');
+                }
+                button.setAttribute('onclick', `quickSearch('${item.query}')`);
+                button.innerHTML = `
+                    ${item.icon} <br><span class="text-sm font-medium">${item.text}</span>
+                `;
+                quickSearchButtonsContainer.appendChild(button);
+            });
+        }
+
+        /**
+         * Menampilkan kotak pesan kustom (menggantikan alert()).
+         * @param {string} message - Pesan yang akan ditampilkan.
+         * @param {string} [title='Pemberitahuan'] - Judul kotak pesan.
+         */
+        function showAlert(message, title = 'Pemberitahuan') {
+            const modalOverlay = document.createElement('div');
+            modalOverlay.className = 'custom-modal-overlay';
+            modalOverlay.innerHTML = `
+                <div class="custom-modal">
+                    <div class="custom-modal-title">${title}</div>
+                    <div class="custom-modal-message">${message}</div>
+                    <div class="custom-modal-actions">
+                        <button class="ok-btn" onclick="this.closest('.custom-modal-overlay').remove()">OK</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modalOverlay);
+        }
+
+        /**
+         * Menampilkan kotak konfirmasi kustom (menggantikan confirm()).
+         * @param {string} message - Pesan konfirmasi.
+         * @param {string} [title='Konfirmasi'] - Judul kotak konfirmasi.
+         * @returns {Promise<boolean>} - Promise yang akan resolve true jika dikonfirmasi, false jika dibatalkan.
+         */
+        function showConfirm(message, title = 'Konfirmasi') {
+            return new Promise(resolve => {
+                const modalOverlay = document.createElement('div');
+                modalOverlay.className = 'custom-modal-overlay';
+                modalOverlay.innerHTML = `
+                    <div class="custom-modal">
+                        <div class="custom-modal-title">${title}</div>
+                        <div class="custom-modal-message">${message}</div>
+                        <div class="custom-modal-actions">
+                            <button class="confirm-btn">Ya</button>
+                            <button class="cancel-btn">Batal</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modalOverlay);
+
+                modalOverlay.querySelector('.confirm-btn').onclick = () => {
+                    modalOverlay.remove();
+                    resolve(true);
+                };
+                modalOverlay.querySelector('.cancel-btn').onclick = () => {
+                    modalOverlay.remove();
+                    resolve(false);
+                };
+            });
+        }
+
+        /**
+         * Toggles between dark and light mode.
+         */
+        function toggleTheme() {
+            const body = document.body;
+            const sidebarThemeToggle = document.getElementById('sidebarThemeToggle');
+            const sidebarThemeStatus = document.getElementById('sidebarThemeStatus');
+
+            if (isSearchSaverEnabled) {
+                // If Search Saver is on, theme is forced to dark.
+                sidebarThemeToggle.checked = true; // Ensure UI reflects dark mode
+                body.classList.add('dark-mode');
+                showAlert('Mode Gelap otomatis aktif saat Penghemat Pencarian diaktifkan dan tidak dapat diubah.', 'Peringatan');
+                return;
+            }
+
+            body.classList.toggle('dark-mode');
+
+            const isDarkMode = body.classList.contains('dark-mode');
+            sidebarThemeToggle.checked = isDarkMode;
+            sidebarThemeStatus.textContent = isDarkMode ? 'Aktif' : 'Nonaktif';
+            sidebarThemeStatus.classList.toggle('text-green-600', isDarkMode);
+            sidebarThemeStatus.classList.toggle('text-red-600', !isDarkMode);
+            sidebarThemeStatus.classList.toggle('dark:text-green-400', isDarkMode);
+            sidebarThemeStatus.classList.toggle('dark:text-red-400', !isDarkMode);
+
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+
+            applyBackground(selectedBackground);
+            updateQuickSearchSuggestions();
+            renderSearchEngineButtons(); // Re-render to apply theme to buttons
+        }
+
+        /**
+         * Applies the saved theme preference on page load.
+         */
+        function applySavedTheme() {
+            const savedTheme = localStorage.getItem('theme');
+            const body = document.body;
+            const sidebarThemeToggle = document.getElementById('sidebarThemeToggle');
+            const sidebarThemeStatus = document.getElementById('sidebarThemeStatus');
+
+            if (savedTheme === 'dark') {
+                body.classList.add('dark-mode');
+                sidebarThemeToggle.checked = true;
+            } else {
+                body.classList.remove('dark-mode');
+                sidebarThemeToggle.checked = false;
+            }
+            sidebarThemeStatus.textContent = sidebarThemeToggle.checked ? 'Aktif' : 'Nonaktif';
+            sidebarThemeStatus.classList.toggle('text-green-600', sidebarThemeToggle.checked);
+            sidebarThemeStatus.classList.toggle('text-red-600', !sidebarThemeToggle.checked);
+            sidebarThemeStatus.classList.toggle('dark:text-green-400', sidebarThemeToggle.checked);
+            sidebarThemeStatus.classList.toggle('dark:text-red-400', !sidebarThemeToggle.checked);
+        }
+
+        /**
+         * Toggles High Contrast Mode on/off.
+         */
+        function toggleHighContrastMode() {
+            const body = document.body;
+            const sidebarHighContrastToggle = document.getElementById('sidebarHighContrastToggle');
+            const sidebarHighContrastStatus = document.getElementById('sidebarHighContrastStatus');
+
+            isHighContrastModeEnabled = sidebarHighContrastToggle.checked;
+            body.classList.toggle('high-contrast-mode', isHighContrastModeEnabled);
+
+            sidebarHighContrastStatus.textContent = isHighContrastModeEnabled ? 'Aktif' : 'Nonaktif';
+            sidebarHighContrastStatus.classList.toggle('text-green-600', isHighContrastModeEnabled);
+            sidebarHighContrastStatus.classList.toggle('text-red-600', !isHighContrastModeEnabled);
+            sidebarHighContrastStatus.classList.toggle('dark:text-green-400', isHighContrastModeEnabled);
+            sidebarHighContrastStatus.classList.toggle('dark:text-red-400', !isHighContrastModeEnabled);
+
+            localStorage.setItem('isHighContrastModeEnabled', JSON.stringify(isHighContrastModeEnabled));
+        }
+
+        /**
+         * Adjusts the font size of the body.
+         * @param {number} direction - 1 for increase, -1 for decrease.
+         */
+        function adjustFontSize(direction) {
+            const currentFontSizeElement = document.getElementById('currentFontSize');
+
+            currentFontSizeIndex += direction;
+            if (currentFontSizeIndex < 0) {
+                currentFontSizeIndex = 0;
+            } else if (currentFontSizeIndex >= fontSizes.length) {
+                currentFontSizeIndex = fontSizes.length - 1;
+            }
+
+            document.body.style.setProperty('--base-font-size', fontSizes[currentFontSizeIndex]);
+
+            // Update status text
+            let statusText = 'Normal';
+            if (currentFontSizeIndex === 0) {
+                statusText = 'Kecil';
+            } else if (currentFontSizeIndex === fontSizes.length - 1) {
+                statusText = 'Besar';
+            } else if (currentFontSizeIndex > 1) {
+                statusText = 'Lebih Besar';
+            } else if (currentFontSizeIndex < 1) {
+                statusText = 'Lebih Kecil';
+            }
+            currentFontSizeElement.textContent = statusText;
+
+            localStorage.setItem('currentFontSizeIndex', JSON.stringify(currentFontSizeIndex));
+        }
+
+        /**
+         * Toggles Focus Mode on/off.
+         */
+        function toggleFocusMode() {
+            const body = document.body;
+            const sidebarFocusModeToggle = document.getElementById('sidebarFocusModeToggle');
+            const sidebarFocusModeStatus = document.getElementById('sidebarFocusModeStatus');
+            const quickSearchSuggestions = document.getElementById('quickSearchSuggestions');
+            const searchEngineOptions = document.getElementById('searchEngineOptions');
+            const footer = document.querySelector('footer');
+            const searchResults = document.getElementById('searchResults');
+
+            isFocusModeEnabled = sidebarFocusModeToggle.checked;
+            body.classList.toggle('focus-mode', isFocusModeEnabled);
+
+            // Hide/show elements based on focus mode
+            quickSearchSuggestions.style.display = isFocusModeEnabled ? 'none' : '';
+            searchEngineOptions.style.display = isFocusModeEnabled ? 'none' : '';
+            footer.style.display = isFocusModeEnabled ? 'none' : '';
+            searchResults.style.display = isFocusModeEnabled ? 'none' : '';
+
+            // Update status text
+            sidebarFocusModeStatus.textContent = isFocusModeEnabled ? 'Aktif' : 'Nonaktif';
+            sidebarFocusModeStatus.classList.toggle('text-green-600', isFocusModeEnabled);
+            sidebarFocusModeStatus.classList.toggle('text-red-600', !isFocusModeEnabled);
+            sidebarFocusModeStatus.classList.toggle('dark:text-green-400', isFocusModeEnabled);
+            sidebarFocusModeStatus.classList.toggle('dark:text-red-400', !isFocusModeEnabled);
+
+            // If focus mode is active, disable background selection mode and revert background
+            if (isFocusModeEnabled) {
+                isBackgroundSelectionMode = false;
+                document.getElementById('sidebarBackgroundToggle').checked = false;
+                document.getElementById('sidebarBackgroundStatus').textContent = 'Nonaktif (Mode Fokus)';
+                document.getElementById('sidebarBackgroundStatus').classList.remove('text-green-600', 'dark:text-green-400');
+                document.getElementById('sidebarBackgroundStatus').classList.add('text-red-600', 'dark:text-red-400');
+                document.getElementById('sidebarBackgroundToggle').disabled = true; // Disable toggle
+                applyBackground(''); // Revert to default simple background
+            } else {
+                document.getElementById('sidebarBackgroundToggle').disabled = false; // Enable toggle
+                // Reapply background based on saved state or default
+                isBackgroundSelectionMode = localStorage.getItem('isBackgroundSelectionMode') === 'true';
+                document.getElementById('sidebarBackgroundToggle').checked = isBackgroundSelectionMode;
+                document.getElementById('sidebarBackgroundStatus').textContent = isBackgroundSelectionMode ? 'Aktif' : 'Nonaktif';
+                sidebarBackgroundStatus.classList.toggle('text-green-600', isBackgroundSelectionMode);
+                sidebarBackgroundStatus.classList.toggle('text-red-600', !isBackgroundSelectionMode);
+                sidebarBackgroundStatus.classList.toggle('dark:text-green-400', isBackgroundSelectionMode);
+                sidebarBackgroundStatus.classList.toggle('dark:text-red-400', !isBackgroundSelectionMode);
+                applyBackground(selectedBackground); // Reapply previously selected background
+            }
+
+            localStorage.setItem('isFocusModeEnabled', JSON.stringify(isFocusModeEnabled));
+            localStorage.setItem('isBackgroundSelectionMode', JSON.stringify(isBackgroundSelectionMode)); // Update background selection mode state
+        }
+
+
+        /**
+         * Toggles Search Sensor on/off.
+         * The actual state of isSearchSensorEnabled is controlled by toggleKidsMode and toggleIncognitoMode.
+         * This function primarily handles UI updates and prevents manual override based on the strict rule.
+         */
+        function toggleSearchSensor() {
+            const sidebarSearchSensorToggle = document.getElementById('sidebarSearchSensorToggle');
+            const sidebarSensorStatus = document.getElementById('sidebarSensorStatus');
+
+            // If Incognito Mode is active, sensor is forced off.
+            if (isIncognitoModeEnabled) {
+                sidebarSearchSensorToggle.checked = false; // Ensure UI reflects forced off state
+                showAlert('Sensor Pencarian otomatis nonaktif saat Mode Samaran diaktifkan dan tidak dapat diubah.', 'Peringatan');
+                return; // Prevent any further action
+            }
+
+            // If Kids Mode is active, sensor is forced on.
+            if (isKidsModeEnabled) {
+                sidebarSearchSensorToggle.checked = true; // Ensure UI reflects forced on state
+                showAlert('Sensor Pencarian otomatis aktif saat Mode Anak-anak diaktifkan dan tidak dapat diubah.', 'Peringatan');
+                return; // Prevent any further action
+            }
+
+            // If neither Incognito nor Kids Mode is active, the sensor must always be ON.
+            // If the user somehow tries to uncheck it, we force it back on and alert them.
+            if (!sidebarSearchSensorToggle.checked) {
+                sidebarSearchSensorToggle.checked = true; // Force it ON
+                isSearchSensorEnabled = true; // Update internal state
+                showAlert('Sensor Pencarian harus aktif kecuali dalam Mode Samaran.', 'Peringatan');
+            } else {
+                // If it's already checked and not forced by other modes, confirm it's active.
+                isSearchSensorEnabled = true;
+            }
+
+            sidebarSensorStatus.textContent = isSearchSensorEnabled ? 'Aktif' : 'Nonaktif';
+            sidebarSensorStatus.classList.toggle('text-green-600', isSearchSensorEnabled);
+            sidebarSensorStatus.classList.toggle('text-red-600', !isSearchSensorEnabled);
+            sidebarSensorStatus.classList.toggle('dark:text-green-400', isSearchSensorEnabled);
+            sidebarSensorStatus.classList.toggle('dark:text-red-400', !isSearchSensorEnabled);
+
+            // Based on the new strict rule, the toggle is always disabled.
+            sidebarSearchSensorToggle.disabled = true;
+            localStorage.setItem('searchSensorEnabled', JSON.stringify(isSearchSensorEnabled));
+        }
+
+        /**
+         * Toggles Kids Mode on/off.
+         */
+        function toggleKidsMode() {
+            const sidebarKidsModeToggle = document.getElementById('sidebarKidsModeToggle');
+            const sidebarKidsModeStatus = document.getElementById('sidebarKidsModeStatus');
+            const sidebarSearchSensorToggle = document.getElementById('sidebarSearchSensorToggle');
+            const sidebarSensorStatus = document.getElementById('sidebarSensorStatus');
+            const body = document.body;
+
+            // Prevent Kids Mode activation if Incognito Mode is active
+            if (isIncognitoModeEnabled && sidebarKidsModeToggle.checked) {
+                sidebarKidsModeToggle.checked = false; // Revert toggle
+                showAlert('Mode Anak-anak tidak dapat diaktifkan saat Mode Samaran aktif.', 'Peringatan');
+                return;
+            }
+            // Prevent manual Kids Mode activation if it's forced by age
+            if (isKidsModeForcedByAge && sidebarKidsModeToggle.checked) {
+                sidebarKidsModeToggle.checked = true; // Keep it true, as it's forced
+                showAlert('Mode Anak-anak diaktifkan secara otomatis berdasarkan umur dan tidak dapat dinonaktifkan.', 'Peringatan');
+                return;
+            }
+
+
+            isKidsModeEnabled = sidebarKidsModeToggle.checked;
+
+            if (isKidsModeEnabled) {
+                sidebarKidsModeStatus.textContent = 'Aktif';
+                sidebarKidsModeStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarKidsModeStatus.classList.add('text-green-600', 'dark:text-green-400');
+                // Disable toggle if forced by age, otherwise enable
+                sidebarKidsModeToggle.disabled = isKidsModeForcedByAge;
+
+                // When Kids Mode is ON, force Search Sensor ON
+                isSearchSensorEnabled = true;
+                sidebarSearchSensorToggle.checked = true;
+                sidebarSearchSensorToggle.disabled = true; // Always disabled
+                sidebarSensorStatus.textContent = 'Aktif (Mode Anak)';
+                sidebarSensorStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarSensorStatus.classList.add('text-green-600', 'dark:text-green-400');
+
+            } else {
+                sidebarKidsModeStatus.textContent = 'Nonaktif';
+                sidebarKidsModeStatus.classList.remove('text-green-600', 'dark:text-red-400');
+                sidebarKidsModeStatus.classList.add('text-red-600', 'dark:text-red-400');
+                // Disable toggle if forced by age, otherwise enable
+                sidebarKidsModeToggle.disabled = isKidsModeForcedByAge;
+
+                // When Kids Mode is OFF, and Incognito Mode is also OFF, Search Sensor must be ON.
+                if (!isIncognitoModeEnabled) {
+                    isSearchSensorEnabled = true; // Sensor is always ON unless Incognito is active
+                    sidebarSearchSensorToggle.checked = true;
+                    sidebarSensorStatus.textContent = 'Aktif';
+                    sidebarSensorStatus.classList.toggle('text-green-600', true);
+                    sidebarSensorStatus.classList.toggle('text-red-600', false);
+                    sidebarSensorStatus.classList.toggle('dark:text-green-400', true);
+                    sidebarSensorStatus.classList.toggle('dark:text-red-400', false);
+                } else {
+                    // If Incognito Mode is active, sensor remains OFF (forced by Incognito)
+                    isSearchSensorEnabled = false;
+                    sidebarSearchSensorToggle.checked = false;
+                    sidebarSensorStatus.textContent = 'Nonaktif (Mode Samaran)';
+                    sidebarSensorStatus.classList.toggle('text-green-600', false);
+                    sidebarSensorStatus.classList.toggle('text-red-600', true);
+                    sidebarSensorStatus.classList.toggle('dark:text-green-400', false);
+                    sidebarSensorStatus.classList.toggle('dark:text-red-400', true);
+                }
+                sidebarSearchSensorToggle.disabled = true; // Always disabled
+            }
+
+            localStorage.setItem('isKidsModeEnabled', JSON.stringify(isKidsModeEnabled));
+            localStorage.setItem('searchSensorEnabled', JSON.stringify(isSearchSensorEnabled)); // Update last state for consistency
+
+            updateQuickSearchSuggestions();
+            applyBackground(selectedBackground);
+        }
+
+        /**
+         * Toggles the background selection mode.
+         */
+        function toggleBackgroundSelectionMode() {
+            const sidebarBackgroundToggle = document.getElementById('sidebarBackgroundToggle');
+            const sidebarBackgroundStatus = document.getElementById('sidebarBackgroundStatus');
+            const buttonText = document.getElementById('buttonText');
+            const mainSearchInput = document.getElementById('mainSearchInput');
+            const voiceSearchBtn = document.getElementById('voiceSearchBtn');
+            const searchEngineOptions = document.getElementById('searchEngineOptions');
+
+            // If Focus Mode is active, prevent background selection mode
+            if (isFocusModeEnabled && sidebarBackgroundToggle.checked) {
+                sidebarBackgroundToggle.checked = false; // Revert toggle
+                showAlert('Pilihan Background otomatis nonaktif saat Mode Fokus diaktifkan dan tidak dapat diubah.', 'Peringatan');
+                return;
+            }
+
+            isBackgroundSelectionMode = sidebarBackgroundToggle.checked;
+
+            if (isBackgroundSelectionMode) {
+                sidebarBackgroundStatus.textContent = 'Aktif';
+                sidebarBackgroundStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarBackgroundStatus.classList.add('text-green-600', 'dark:text-green-400');
+                buttonText.textContent = 'Pilih Background';
+                mainSearchInput.disabled = true;
+                mainSearchInput.placeholder = 'Mode Pilih Background Aktif';
+                voiceSearchBtn.disabled = true;
+                searchEngineOptions.classList.add('hidden');
+            } else {
+                sidebarBackgroundStatus.textContent = 'Nonaktif';
+                sidebarBackgroundStatus.classList.remove('text-green-600', 'dark:text-red-400');
+                sidebarBackgroundStatus.classList.add('text-red-600', 'dark:text-red-400');
+                buttonText.textContent = 'Cari';
+                mainSearchInput.disabled = false;
+                updateSearchInputPlaceholder();
+                voiceSearchBtn.disabled = false;
+                searchEngineOptions.classList.remove('hidden');
+            }
+            localStorage.setItem('isBackgroundSelectionMode', JSON.stringify(isBackgroundSelectionMode));
+        }
+
+        /**
+         * Toggles Gemini Search on/off.
+         */
+        function toggleGeminiSearch() {
+            const sidebarGeminiSearchToggle = document.getElementById('sidebarGeminiSearchToggle');
+            const sidebarGeminiSearchStatus = document.getElementById('sidebarGeminiSearchStatus');
+            const searchEngineOptions = document.getElementById('searchEngineOptions');
+            const mainSearchInput = document.getElementById('mainSearchInput');
+            const geminiVisualSearchControls = document.getElementById('geminiVisualSearchControls');
+            const uploadedImagePreviewContainer = document.getElementById('uploadedImagePreviewContainer');
+            const visualSearchBtn = document.getElementById('visualSearchBtn');
+
+            isGeminiSearchEnabled = sidebarGeminiSearchToggle.checked;
+
+            if (isGeminiSearchEnabled) {
+                sidebarGeminiSearchStatus.textContent = 'Aktif';
+                sidebarGeminiSearchStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarGeminiSearchStatus.classList.add('text-green-600', 'dark:text-green-400');
+                searchEngineOptions.classList.add('hidden'); // Hide traditional search engines
+                geminiVisualSearchControls.classList.remove('hidden'); // Show visual search controls
+                visualSearchBtn.disabled = !uploadedImageBase64; // Enable/disable based on image presence
+            } else {
+                sidebarGeminiSearchStatus.textContent = 'Nonaktif';
+                sidebarGeminiSearchStatus.classList.remove('text-green-600', 'dark:text-red-400');
+                sidebarGeminiSearchStatus.classList.add('text-red-600', 'dark:text-red-400');
+                searchEngineOptions.classList.remove('hidden'); // Show traditional search engines
+                geminiVisualSearchControls.classList.add('hidden'); // Hide visual search controls
+                uploadedImagePreviewContainer.classList.add('hidden'); // Hide image preview
+                clearUploadedImage(); // Clear any uploaded image when Gemini mode is off
+            }
+            localStorage.setItem('isGeminiSearchEnabled', JSON.stringify(isGeminiSearchEnabled));
+            updateSearchInputPlaceholder();
+        }
+
+        /**
+         * Toggles Incognito Mode on/off.
+         */
+        function toggleIncognitoMode() {
+            const sidebarIncognitoModeToggle = document.getElementById('sidebarIncognitoModeToggle');
+            const sidebarIncognitoModeStatus = document.getElementById('sidebarIncognitoModeStatus');
+            const sidebarSearchSensorToggle = document.getElementById('sidebarSearchSensorToggle');
+            const sidebarSensorStatus = document.getElementById('sidebarSensorStatus');
+            const sidebarKidsModeToggle = document.getElementById('sidebarKidsModeToggle');
+            const sidebarKidsModeStatus = document.getElementById('sidebarKidsModeStatus');
+
+
+            isIncognitoModeEnabled = sidebarIncognitoModeToggle.checked;
+
+            if (isIncognitoModeEnabled) {
+                sidebarIncognitoModeStatus.textContent = 'Aktif';
+                sidebarIncognitoModeStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarIncognitoModeStatus.classList.add('text-green-600', 'dark:text-green-400');
+                showAlert('Mode Samaran Aktif. Anda masih bisa melakukan pencarian seperti biasa, namun riwayat pencarian dan situs yang dikunjungi tidak akan disimpan. Sensor Pencarian dinonaktifkan secara otomatis.', 'Mode Samaran');
+
+                // Save current Kids Mode state before forcing it off
+                lastKidsModeStateBeforeIncognito = isKidsModeEnabled;
+
+                // Force Kids Mode OFF and disable its toggle
+                isKidsModeEnabled = false; // Force kids mode OFF
+                sidebarKidsModeToggle.checked = false;
+                sidebarKidsModeToggle.disabled = true;
+                sidebarKidsModeStatus.textContent = 'Nonaktif (Mode Samaran)';
+                sidebarKidsModeStatus.classList.remove('text-green-600', 'dark:text-red-400');
+                sidebarKidsModeStatus.classList.add('text-red-600', 'dark:text-red-400');
+
+                // Force Search Sensor OFF and disable its toggle
+                lastSearchSensorStateBeforeIncognito = isSearchSensorEnabled; // Save current sensor state
+                isSearchSensorEnabled = false; // Force sensor OFF
+                sidebarSearchSensorToggle.checked = false;
+                sidebarSearchSensorToggle.disabled = true; // Always disabled
+                sidebarSensorStatus.textContent = 'Nonaktif (Mode Samaran)';
+                sidebarSensorStatus.classList.remove('text-green-600', 'dark:text-red-400');
+                sidebarSensorStatus.classList.add('text-red-600', 'dark:text-red-400');
+
+                clearSearchHistory(); // Clear history immediately when incognito mode is turned on
+            } else {
+                sidebarIncognitoModeStatus.textContent = 'Nonaktif';
+                sidebarIncognitoModeStatus.classList.remove('text-green-600', 'dark:text-red-400');
+                sidebarIncognitoModeStatus.classList.add('text-red-600', 'dark:text-red-400');
+                showAlert('Mode Samaran Nonaktif. Riwayat pencarian dan situs akan disimpan kembali.', 'Mode Samaran');
+
+                // Restore Kids Mode state, but only if not forced by age
+                if (!isKidsModeForcedByAge) {
+                    isKidsModeEnabled = lastKidsModeStateBeforeIncognito;
+                    sidebarKidsModeToggle.checked = isKidsModeEnabled;
+                    sidebarKidsModeToggle.disabled = false; // Enable Kids Mode toggle
+                    sidebarKidsModeStatus.textContent = isKidsModeEnabled ? 'Aktif' : 'Nonaktif';
+                    sidebarKidsModeStatus.classList.toggle('text-green-600', isKidsModeEnabled);
+                    sidebarKidsModeStatus.classList.toggle('text-red-600', !isKidsModeEnabled);
+                    sidebarKidsModeStatus.classList.toggle('dark:text-green-400', isKidsModeEnabled);
+                    sidebarKidsModeStatus.classList.toggle('dark:text-red-400', !isKidsModeEnabled);
+                } else {
+                    // If kids mode is forced by age, keep it active and disabled
+                    isKidsModeEnabled = true;
+                    sidebarKidsModeToggle.checked = true;
+                    sidebarKidsModeToggle.disabled = true;
+                    sidebarKidsModeStatus.textContent = 'Aktif (Umur)';
+                    sidebarKidsModeStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                    sidebarKidsModeStatus.classList.add('text-green-600', 'dark:text-green-400');
+                }
+
+                // Restore Search Sensor state based on Kids Mode and the new rule
+                if (isKidsModeEnabled) { // This now correctly reflects if Kids Mode is active (by age or restored)
+                    isSearchSensorEnabled = true;
+                    sidebarSearchSensorToggle.checked = true;
+                    sidebarSensorStatus.textContent = 'Aktif (Mode Anak)';
+                    sidebarSensorStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                    sidebarSensorStatus.classList.add('text-green-600', 'dark:text-green-400');
+                } else {
+                    isSearchSensorEnabled = true;
+                    sidebarSearchSensorToggle.checked = true;
+                    sidebarSensorStatus.textContent = 'Aktif';
+                    sidebarSensorStatus.classList.toggle('text-green-600', true);
+                    sidebarSensorStatus.classList.toggle('text-red-600', false);
+                    sidebarSensorStatus.classList.toggle('dark:text-green-400', true);
+                    sidebarSensorStatus.classList.toggle('dark:text-red-400', false);
+                }
+                sidebarSearchSensorToggle.disabled = true;
+
+            }
+            localStorage.setItem('isIncognitoModeEnabled', JSON.stringify(isIncognitoModeEnabled));
+            localStorage.setItem('searchSensorEnabled', JSON.stringify(isSearchSensorEnabled));
+            localStorage.setItem('lastSearchSensorStateBeforeIncognito', JSON.stringify(lastSearchSensorStateBeforeIncognito));
+            localStorage.setItem('lastKidsModeStateBeforeIncognito', JSON.stringify(lastKidsModeStateBeforeIncognito));
+            displaySearchHistory();
+        }
+
+        /**
+         * Toggles Custom Search Engine feature on/off.
+         */
+        function toggleCustomSearch() {
+            const sidebarCustomSearchToggle = document.getElementById('sidebarCustomSearchToggle');
+            const sidebarCustomSearchStatus = document.getElementById('sidebarCustomSearchStatus');
+            const customSearchControls = document.getElementById('customSearchControls');
+
+            if (isSearchSaverEnabled) {
+                sidebarCustomSearchToggle.checked = false;
+                showAlert('Mesin Pencari Kustom otomatis nonaktif saat Penghemat Pencarian diaktifkan dan tidak dapat diubah.', 'Peringatan');
+                return;
+            }
+
+            isCustomSearchEnabled = sidebarCustomSearchToggle.checked;
+
+            if (isCustomSearchEnabled) {
+                sidebarCustomSearchStatus.textContent = 'Aktif';
+                sidebarCustomSearchStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarCustomSearchStatus.classList.add('text-green-600', 'dark:text-green-400');
+                customSearchControls.classList.remove('hidden');
+            } else {
+                sidebarCustomSearchStatus.textContent = 'Nonaktif';
+                sidebarCustomSearchStatus.classList.remove('text-green-600', 'dark:text-red-400');
+                sidebarCustomSearchStatus.classList.add('text-red-600', 'dark:text-red-400');
+                customSearchControls.classList.add('hidden');
+                // If custom search is disabled, ensure currentSearchEngine is not a custom one
+                if (!defaultSearchEngines.hasOwnProperty(currentSearchEngine)) {
+                    setSearchEngine('google'); // Fallback to Google
+                }
+            }
+            localStorage.setItem('isCustomSearchEnabled', JSON.stringify(isCustomSearchEnabled));
+            loadCustomSearchEngines(); // Reload engines based on new toggle state
+        }
+
+        /**
+         * Toggles Search Saver feature on/off.
+         */
+        function toggleSearchSaver() {
+            const sidebarSearchSaverToggle = document.getElementById('sidebarSearchSaverToggle');
+            const sidebarSearchSaverStatus = document.getElementById('sidebarSearchSaverStatus');
+            const sidebarThemeToggle = document.getElementById('sidebarThemeToggle');
+            const sidebarCustomSearchToggle = document.getElementById('sidebarCustomSearchToggle');
+            const quickSearchSuggestionsSection = document.getElementById('quickSearchSuggestions');
+
+            isSearchSaverEnabled = sidebarSearchSaverToggle.checked;
+
+            if (isSearchSaverEnabled) {
+                sidebarSearchSaverStatus.textContent = 'Aktif';
+                sidebarSearchSaverStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarSearchSaverStatus.classList.add('text-green-600', 'dark:text-green-400');
+
+                // Force Dark Mode
+                document.body.classList.add('dark-mode');
+                sidebarThemeToggle.checked = true;
+                sidebarThemeToggle.disabled = true; // Disable theme toggle
+                document.getElementById('sidebarThemeStatus').textContent = 'Aktif (Penghemat Pencarian)';
+                document.getElementById('sidebarThemeStatus').classList.remove('text-red-600', 'dark:text-red-400');
+                document.getElementById('sidebarThemeStatus').classList.add('text-green-600', 'dark:text-green-400');
+
+
+                // Disable Quick Search Shortcuts
+                quickSearchSuggestionsSection.classList.add('hidden');
+                updateQuickSearchSuggestions(); // Re-render to hide
+
+                // Disable Custom Search Engine
+                isCustomSearchEnabled = false;
+                sidebarCustomSearchToggle.checked = false;
+                sidebarCustomSearchToggle.disabled = true; // Disable custom search toggle
+                document.getElementById('sidebarCustomSearchStatus').textContent = 'Nonaktif (Penghemat Pencarian)';
+                document.getElementById('sidebarCustomSearchStatus').classList.remove('text-green-600', 'dark:text-red-400');
+                document.getElementById('sidebarCustomSearchStatus').classList.add('text-red-600', 'dark:text-red-400');
+                document.getElementById('customSearchControls').classList.add('hidden');
+
+                // Limit Search Engines to Google, Yahoo, Bing
+                setSearchEngine('google'); // Ensure a valid engine is selected
+                renderSearchEngineButtons(); // Re-render to show only allowed engines
+
+            } else {
+                sidebarSearchSaverStatus.textContent = 'Nonaktif';
+                sidebarSearchSaverStatus.classList.remove('text-green-600', 'dark:text-red-400');
+                sidebarSearchSaverStatus.classList.add('text-red-600', 'dark:text-red-400');
+
+                // Restore Theme
+                sidebarThemeToggle.disabled = false; // Re-enable theme toggle
+                applySavedTheme(); // Apply previously saved theme
+
+                // Re-enable Quick Search Shortcuts
+                quickSearchSuggestionsSection.classList.remove('hidden');
+                updateQuickSearchSuggestions(); // Re-render to show
+
+                // Re-enable Custom Search Engine based on its saved state
+                sidebarCustomSearchToggle.disabled = false; // Re-enable custom search toggle
+                isCustomSearchEnabled = localStorage.getItem('isCustomSearchEnabled') === 'true';
+                sidebarCustomSearchToggle.checked = isCustomSearchEnabled;
+                document.getElementById('sidebarCustomSearchStatus').textContent = isCustomSearchEnabled ? 'Aktif' : 'Nonaktif';
+                document.getElementById('sidebarCustomSearchStatus').classList.toggle('text-green-600', isCustomSearchEnabled);
+                document.getElementById('sidebarCustomSearchStatus').classList.toggle('text-red-600', !isCustomSearchEnabled);
+                document.getElementById('sidebarCustomSearchStatus').classList.toggle('dark:text-green-400', isCustomSearchEnabled);
+                document.getElementById('sidebarCustomSearchStatus').classList.toggle('dark:text-red-400', !isCustomSearchEnabled);
+                document.getElementById('customSearchControls').classList.toggle('hidden', !isCustomSearchEnabled);
+                loadCustomSearchEngines(); // Re-load all engines including custom ones
+
+                renderSearchEngineButtons(); // Re-render to show all engines
+            }
+            localStorage.setItem('isSearchSaverEnabled', JSON.stringify(isSearchSaverEnabled));
+        }
+
+
+        /**
+         * Updates the placeholder text of the main search input based on Gemini search status.
+         */
+        function updateSearchInputPlaceholder() {
+            const mainSearchInput = document.getElementById('mainSearchInput');
+            if (isBackgroundSelectionMode) {
+                mainSearchInput.placeholder = 'Mode Pilih Background Aktif';
+            } else if (isGeminiSearchEnabled) {
+                mainSearchInput.placeholder = 'Tanyakan sesuatu pada Gemini AI atau unggah gambar...';
+            } else {
+                mainSearchInput.placeholder = 'Masukkan kata kunci pencarian...';
+            }
+        }
+
+        /**
+         * Opens the background picker modal.
+         */
+        function openBackgroundPicker() {
+            const modal = document.getElementById('backgroundPickerModal');
+            const grid = document.getElementById('backgroundGrid');
+            grid.innerHTML = '';
+
+            backgrounds.forEach(bg => {
+                const item = document.createElement('div');
+                item.className = 'background-item';
+                if (bg.value.includes('gradient')) {
+                    item.style.backgroundImage = bg.value;
+                    item.style.backgroundColor = '';
+                } else {
+                    item.style.backgroundColor = bg.value || '#ccc';
+                    item.style.backgroundImage = '';
+                }
+                item.dataset.id = bg.id;
+                item.dataset.value = bg.value;
+                item.innerHTML = `<div class="background-item-label">${bg.name}</div>`;
+                item.onclick = () => selectBackground(item);
+
+                if (selectedBackground === bg.value) {
+                    item.classList.add('selected');
+                }
+                grid.appendChild(item);
+            });
+
+            modal.classList.add('active');
+        }
+
+        /**
+         * Selects a background in the picker modal.
+         * @param {HTMLElement} element - The clicked background item element.
+         */
+        function selectBackground(element) {
+            document.querySelectorAll('.background-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            selectedBackground = element.dataset.value;
+        }
+
+        /**
+         * Applies the selected background and closes the modal.
+         */
+        function applySelectedBackground() {
+            applyBackground(selectedBackground);
+            localStorage.setItem('selectedBackground', selectedBackground);
+            closeBackgroundPicker();
+        }
+
+        /**
+         * Applies the given background CSS value to the body.
+         * @param {string} value - The CSS value for the background (color or gradient).
+         */
+        function applyBackground(value) {
+            const body = document.body;
+            body.classList.remove('kids-mode-bg'); // Remove special backgrounds first
+
+            if (value) {
+                if (value.includes('gradient')) {
+                    body.style.backgroundImage = value;
+                    body.style.backgroundColor = '';
+                } else {
+                    body.style.backgroundColor = value;
+                    body.style.backgroundImage = '';
+                }
+            } else {
+                body.style.backgroundImage = '';
+                body.style.backgroundColor = body.classList.contains('dark-mode') ? '#1a202c' : '#f0f2f5';
+            }
+
+            if (!value && isKidsModeEnabled) {
+                body.classList.add('kids-mode-bg');
+            }
+        }
+
+        /**
+         * Closes the background picker modal.
+         */
+        function closeBackgroundPicker() {
+            document.getElementById('backgroundPickerModal').classList.remove('active');
+        }
+
+        /**
+         * Toggles the sidebar visibility.
+         */
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        /**
+         * Initializes and starts voice recognition.
+         */
+        function startVoiceSearch() {
+            const mainSearchInput = document.getElementById('mainSearchInput');
+            const voiceSearchBtn = document.getElementById('voiceSearchBtn');
+
+            if (!('webkitSpeechRecognition' in window)) {
+                showAlert('Maaf, browser Anda tidak mendukung fitur pengenalan suara. Silakan gunakan Google Chrome untuk fitur ini.', 'Browser Tidak Didukung');
+                return;
+            }
+
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'id-ID';
+
+            recognition.onstart = () => {
+                voiceSearchBtn.classList.add('listening');
+                mainSearchInput.placeholder = 'Mendengarkan...';
+                mainSearchInput.value = '';
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                mainSearchInput.value = transcript;
+                updateSearchInputPlaceholder();
+                voiceSearchBtn.classList.remove('listening');
+                handleMainButtonAction(); // Use the main action handler
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                updateSearchInputPlaceholder();
+                voiceSearchBtn.classList.remove('listening');
+                let errorMessage = 'Terjadi kesalahan pada pengenalan suara.';
+                if (event.error === 'not-allowed') {
+                    errorMessage = 'Akses mikrofon ditolak. Mohon izinkan akses mikrofon di pengaturan browser Anda.';
+                } else if (event.error === 'no-speech') {
+                    errorMessage = 'Tidak ada suara terdeteksi. Mohon coba lagi.';
+                } else if (event.error === 'audio-capture') {
+                    errorMessage = 'Tidak ada mikrofon ditemukan atau sedang digunakan.';
+                }
+                showAlert(errorMessage, 'Kesalahan Pengenalan Suara');
+            };
+
+            recognition.onend = () => {
+                updateSearchInputPlaceholder();
+                voiceSearchBtn.classList.remove('listening');
+            };
+
+            recognition.start();
+        }
+
+        /**
+         * Saves a search query to local storage.
+         * @param {string} query - The search query to save.
+         */
+        function saveSearchQuery(query) {
+            if (query && !searchHistory.includes(query)) {
+                searchHistory.unshift(query);
+                if (searchHistory.length > 10) {
+                    searchHistory.splice(10);
+                }
+                localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+                displaySearchHistory();
+            }
+        }
+
+        /**
+         * Loads search history from local storage.
+         */
+        function loadSearchHistory() {
+            const savedHistory = localStorage.getItem('searchHistory');
+            if (savedHistory) {
+                searchHistory = JSON.parse(savedHistory);
+            } else {
+                searchHistory = [];
+            }
+        }
+
+        /**
+         * Displays the search history in the sidebar.
+         */
+        function displaySearchHistory() {
+            const historyList = document.getElementById('searchHistoryList');
+            historyList.innerHTML = '';
+
+            if (isIncognitoModeEnabled) {
+                historyList.innerHTML = '<li class="text-gray-400 text-sm">Riwayat tidak tersedia dalam Mode Samaran.</li>';
+                document.getElementById('clearHistoryBtn').disabled = true;
+                return;
+            } else {
+                document.getElementById('clearHistoryBtn').disabled = false;
+            }
+
+            if (searchHistory.length === 0) {
+                historyList.innerHTML = '<li class="text-gray-400 text-sm">Belum ada riwayat pencarian.</li>';
+            } else {
+                searchHistory.forEach(query => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'search-history-item';
+                    listItem.innerHTML = `<span>${query}</span>`;
+                    listItem.onclick = () => {
+                        document.getElementById('mainSearchInput').value = query;
+                        handleMainButtonAction(); // Use the main action handler
+                        toggleSidebar();
+                    };
+                    historyList.appendChild(listItem);
+                });
+            }
+        }
+
+        /**
+         * Clears the search history.
+         */
+        async function clearSearchHistory() {
+            const confirmed = await showConfirm('Apakah Anda yakin ingin menghapus semua riwayat pencarian?', 'Hapus Riwayat');
+            if (confirmed) {
+                searchHistory = [];
+                localStorage.removeItem('searchHistory');
+                displaySearchHistory();
+                showAlert('Riwayat pencarian telah dihapus.', 'Berhasil');
+            }
+        }
+
+        /**
+         * Adds a custom search engine.
+         */
+        function addCustomSearchEngine() {
+            if (!isCustomSearchEnabled) {
+                showAlert('Harap aktifkan "Mesin Pencari Kustom" terlebih dahulu di pengaturan.', 'Fitur Dinonaktifkan');
+                return;
+            }
+            if (isSearchSaverEnabled) {
+                showAlert('Tidak dapat menambahkan mesin pencari kustom saat Penghemat Pencarian diaktifkan.', 'Fitur Dinonaktifkan');
+                return;
+            }
+
+            const nameInput = document.getElementById('customEngineName');
+            const urlInput = document.getElementById('customEngineUrl');
+            const name = nameInput.value.trim();
+            const url = urlInput.value.trim();
+
+            if (!name || !url) {
+                showAlert('Nama dan URL mesin pencari kustom tidak boleh kosong.', 'Peringatan');
+                return;
+            }
+
+            // Basic URL validation
+            try {
+                new URL(url.replace('{query}', 'test')); // Replace {query} for validation
+            } catch (_) {
+                showAlert('Format URL tidak valid. Pastikan URL menyertakan "https://" dan "{query}" di tempat kueri pencarian akan ditempatkan (misalnya, "https://example.com/search?q={query}").', 'URL Tidak Valid');
+                return;
+            }
+
+            if (!url.includes('{query}')) {
+                showAlert('URL harus menyertakan "{query}" di tempat kueri pencarian akan ditempatkan (misalnya, "https://example.com/search?q={query}").', 'URL Tidak Lengkap');
+                return;
+            }
+
+            const key = name.toLowerCase().replace(/\s/g, ''); // Create a simple key from the name
+            if (allSearchEngines[key]) {
+                showAlert(`Mesin pencari dengan nama "${name}" sudah ada.`, 'Duplikat');
+                return;
+            }
+
+            const customEngines = JSON.parse(localStorage.getItem('customSearchEngines') || '{}');
+            customEngines[key] = { name: name, url: url, icon: '✨' }; // Use a generic icon for custom
+            localStorage.setItem('customSearchEngines', JSON.stringify(customEngines));
+            loadCustomSearchEngines(); // Reload all engines including the new custom one
+            showAlert(`Mesin pencari "${name}" berhasil ditambahkan!`, 'Berhasil');
+
+            nameInput.value = '';
+            urlInput.value = '';
+        }
+
+        /**
+         * Renders the list of custom search engines in the sidebar.
+         */
+        function renderCustomEnginesList() {
+            const customEnginesListDiv = document.getElementById('customEnginesList');
+            customEnginesListDiv.innerHTML = ''; // Clear existing list
+
+            const storedCustomEngines = JSON.parse(localStorage.getItem('customSearchEngines') || '{}');
+            const customKeys = Object.keys(storedCustomEngines);
+
+            if (customKeys.length === 0) {
+                customEnginesListDiv.innerHTML = '<p class="text-gray-400 text-sm">Belum ada mesin kustom.</p>';
+                return;
+            }
+
+            customKeys.forEach(key => {
+                const engine = storedCustomEngines[key];
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex items-center justify-between bg-gray-700 p-3 rounded-md';
+                itemDiv.innerHTML = `
+                    <span class="text-white text-sm">${engine.name}</span>
+                    <button onclick="removeCustomSearchEngine('${key}')" class="text-red-400 hover:text-red-600 text-sm ml-2">Hapus</button>
+                `;
+                customEnginesListDiv.appendChild(itemDiv);
+            });
+        }
+
+        /**
+         * Removes a custom search engine.
+         * @param {string} key - The key of the custom engine to remove.
+         */
+        async function removeCustomSearchEngine(key) {
+            if (!isCustomSearchEnabled) {
+                showAlert('Harap aktifkan "Mesin Pencari Kustom" terlebih dahulu di pengaturan.', 'Fitur Dinonaktifkan');
+                return;
+            }
+            if (isSearchSaverEnabled) {
+                showAlert('Tidak dapat menghapus mesin pencari kustom saat Penghemat Pencarian diaktifkan.', 'Fitur Dinonaktifkan');
+                return;
+            }
+
+            const confirmed = await showConfirm(`Apakah Anda yakin ingin menghapus mesin pencari kustom "${allSearchEngines[key].name}"?`, 'Hapus Mesin Kustom');
+            if (confirmed) {
+                const customEngines = JSON.parse(localStorage.getItem('customSearchEngines') || '{}');
+                delete customEngines[key];
+                localStorage.setItem('customSearchEngines', JSON.stringify(customEngines));
+                loadCustomSearchEngines(); // Reload all engines
+                if (currentSearchEngine === key) {
+                    setSearchEngine('google'); // Fallback to Google if the removed engine was active
+                }
+                showAlert(`Mesin pencari "${allSearchEngines[key].name}" berhasil dihapus.`, 'Berhasil');
+            }
+        }
+
+        /**
+         * Applies Kids Mode based on user's age.
+         * This function should be called after a successful login/registration.
+         * It forces Kids Mode ON and disables its toggle if age < 15.
+         */
+        function applyKidsModeBasedOnAge() {
+            const sidebarKidsModeToggle = document.getElementById('sidebarKidsModeToggle');
+            const sidebarKidsModeStatus = document.getElementById('sidebarKidsModeStatus');
+            const sidebarSearchSensorToggle = document.getElementById('sidebarSearchSensorToggle');
+            const sidebarSensorStatus = document.getElementById('sidebarSensorStatus');
+
+            if (loggedInUser && loggedInUser.age < 15) {
+                isKidsModeForcedByAge = true;
+                isKidsModeEnabled = true; // Force Kids Mode ON
+                sidebarKidsModeToggle.checked = true;
+                sidebarKidsModeToggle.disabled = true; // Disable manual toggle
+                sidebarKidsModeStatus.textContent = 'Aktif (Umur)';
+                sidebarKidsModeStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarKidsModeStatus.classList.add('text-green-600', 'dark:text-green-400');
+
+                // Force Search Sensor ON when Kids Mode is active
+                isSearchSensorEnabled = true;
+                sidebarSearchSensorToggle.checked = true;
+                sidebarSearchSensorToggle.disabled = true; // Always disabled
+                sidebarSensorStatus.textContent = 'Aktif (Mode Anak)';
+                sidebarSensorStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarSensorStatus.classList.add('text-green-600', 'dark:text-green-400');
+
+            } else {
+                isKidsModeForcedByAge = false;
+                // If not forced by age, restore previous Kids Mode state or default to off
+                isKidsModeEnabled = localStorage.getItem('isKidsModeEnabled') === 'true';
+                sidebarKidsModeToggle.checked = isKidsModeEnabled;
+                sidebarKidsModeToggle.disabled = false; // Enable manual toggle
+                sidebarKidsModeStatus.textContent = isKidsModeEnabled ? 'Aktif' : 'Nonaktif';
+                sidebarKidsModeStatus.classList.toggle('text-green-600', isKidsModeEnabled);
+                sidebarKidsModeStatus.classList.toggle('text-red-600', !isKidsModeEnabled);
+                sidebarKidsModeStatus.classList.toggle('dark:text-green-400', isKidsModeEnabled);
+                sidebarKidsModeStatus.classList.toggle('dark:text-red-400', !isKidsModeEnabled);
+
+                // If Kids Mode is now active (restored from localStorage), force sensor on
+                if (isKidsModeEnabled) {
+                    isSearchSensorEnabled = true;
+                    sidebarSearchSensorToggle.checked = true;
+                    sidebarSearchSensorToggle.disabled = true;
+                    sidebarSensorStatus.textContent = 'Aktif (Mode Anak)';
+                    sidebarSensorStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                    sidebarSensorStatus.classList.add('text-green-600', 'dark:text-green-400');
+                } else {
+                    isSearchSensorEnabled = true;
+                    sidebarSearchSensorToggle.checked = true;
+                    sidebarSensorStatus.textContent = 'Aktif';
+                    sidebarSensorStatus.classList.toggle('text-green-600', true);
+                    sidebarSensorStatus.classList.toggle('text-red-600', false);
+                    sidebarSensorStatus.classList.toggle('dark:text-green-400', true);
+                    sidebarSensorStatus.classList.toggle('dark:text-red-400', false);
+                }
+            }
+            localStorage.setItem('isKidsModeForcedByAge', JSON.stringify(isKidsModeForcedByAge));
+            localStorage.setItem('isKidsModeEnabled', JSON.stringify(isKidsModeEnabled)); // Update localStorage
+            localStorage.setItem('searchSensorEnabled', JSON.stringify(isSearchSensorEnabled)); // Update localStorage
+        }
+
+        /**
+         * Handles image file upload, converts to base64, and updates UI.
+         * @param {Event} event - The change event from the file input.
+         */
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            const visualSearchBtn = document.getElementById('visualSearchBtn');
+            const visualButtonText = document.getElementById('visualButtonText');
+            const previewContainer = document.getElementById('uploadedImagePreviewContainer');
+            const previewImage = document.getElementById('uploadedImagePreview');
+
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) { // Limit to 2MB
+                    showAlert('Ukuran gambar terlalu besar. Maksimal 2MB.', 'Ukuran File');
+                    clearUploadedImage();
+                    return;
+                }
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    uploadedImageBase64 = e.target.result.split(',')[1]; // Get base64 part
+                    previewImage.src = e.target.result;
+                    previewContainer.classList.remove('hidden');
+                    visualSearchBtn.disabled = false;
+                    visualSearchBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    visualButtonText.textContent = 'Pencarian Visual';
+                    showAlert('Gambar berhasil diunggah. Klik "Pencarian Visual" untuk mencari.', 'Gambar Terunggah');
+                };
+                reader.onerror = (error) => {
+                    console.error("Error reading file:", error);
+                    showAlert('Gagal membaca file gambar.', 'Kesalahan File');
+                    clearUploadedImage();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                clearUploadedImage();
+            }
+        }
+
+        /**
+         * Clears the uploaded image and resets the visual search UI.
+         */
+        function clearUploadedImage() {
+            uploadedImageBase64 = null;
+            document.getElementById('imageUploadInput').value = ''; // Clear file input
+            document.getElementById('uploadedImagePreviewContainer').classList.add('hidden');
+            document.getElementById('uploadedImagePreview').src = '';
+            const visualSearchBtn = document.getElementById('visualSearchBtn');
+            visualSearchBtn.disabled = true;
+            visualSearchBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('visualButtonText').textContent = 'Pencarian Visual'; // Reset button text
+        }
+
+        /**
+         * Handles the visual search trigger.
+         */
+        async function handleVisualSearch() {
+            if (!uploadedImageBase64) {
+                showAlert('Silakan unggah gambar terlebih dahulu untuk pencarian visual.', 'Peringatan');
+                return;
+            }
+
+            if (!geminiModel) {
+                showAlert("Gemini API tidak diinisialisasi. Periksa konsol untuk detail.", "Kesalahan Gemini");
+                return;
+            }
+
+            showLoading(true); // Use main loading spinner for visual search
+            clearSearchIntentDisplay(); // Clear previous intent
+
+            const resultsContainer = document.getElementById('resultsContainer');
+            const searchResultsSection = document.getElementById('searchResults');
+            resultsContainer.innerHTML = ''; // Clear previous results
+
+            try {
+                const prompt = "Jelaskan apa yang Anda lihat di gambar ini secara detail dan berikan informasi relevan terkait objek atau adegan yang terdeteksi. Format sebagai teks biasa, tanpa markdown judul atau daftar.";
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: prompt },
+                                {
+                                    inlineData: {
+                                        mimeType: "image/jpeg", // Asumsi JPEG. Dalam aplikasi nyata, dapatkan dari file.type
+                                        data: uploadedImageBase64
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                };
+                const apiKey = API_KEY;
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`; // Use gemini-2.0-flash for image understanding
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const geminiText = result.candidates[0].content.parts[0].text;
+
+                    resultsContainer.innerHTML = `
+                        <div class="gemini-result-card">
+                            <h4 class="text-xl font-semibold mb-3">Hasil Pencarian Visual dari Gemini AI</h4>
+                            <p>${geminiText}</p>
+                        </div>
+                    `;
+                    searchResultsSection.classList.remove('hidden');
+                    searchResultsSection.scrollIntoView({ behavior: 'smooth' });
+
+                    if (!isIncognitoModeEnabled) {
+                        saveSearchQuery("Pencarian Visual: " + prompt.substring(0, 50) + "..."); // Save a short description
+                    }
+                    clearUploadedImage(); // Clear image after successful visual search
+
+                } else {
+                    showAlert("Tidak dapat menghasilkan respons dari Gemini untuk gambar ini. Coba lagi.", "Kesalahan Pencarian Visual");
+                    console.error("Struktur respons Gemini API tidak terduga untuk visual search:", result);
+                }
+            } catch (error) {
+                console.error("Kesalahan saat memanggil Gemini API untuk visual search:", error);
+                showAlert(`Terjadi kesalahan saat menghubungi Gemini API untuk pencarian visual: ${error.message}`, "Kesalahan API");
+            } finally {
+                showLoading(false); // Hide main loading spinner
+            }
+        }
+
+        /**
+         * Creates and animates a particle at the given coordinates.
+         * @param {number} x - The X coordinate for the particle.
+         * @param {number} y - The Y coordinate for the particle.
+         */
+        function createParticle(x, y) {
+            // Only create particle if effect is enabled and there are selected particles
+            if (!isParticleEffectEnabled || selectedParticles.length === 0) {
+                return;
+            }
+
+            const particleContainer = document.getElementById('particle-container');
+            const particle = document.createElement('span');
+            particle.className = 'particle';
+            // Pick a random emoji from the selected particles
+            const randomEmoji = selectedParticles[Math.floor(Math.random() * selectedParticles.length)];
+            particle.textContent = randomEmoji;
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+
+            particleContainer.appendChild(particle);
+
+            // Remove the particle after its animation
+            particle.addEventListener('animationend', () => {
+                particle.remove();
+            });
+        }
+
+        /**
+         * Handles click and touch events to create particles.
+         * @param {Event} event - The event object (MouseEvent or TouchEvent).
+         */
+        function handleParticleEffect(event) {
+            let clientX, clientY;
+
+            if (event.type === 'touchstart') {
+                // For touch events, use the first touch point
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                // For mouse events
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+            createParticle(clientX, clientY);
+        }
+
+        /**
+         * Toggles the particle effect on/off.
+         */
+        function toggleParticleEffect() {
+            const sidebarParticleEffectToggle = document.getElementById('sidebarParticleEffectToggle');
+            const sidebarParticleEffectStatus = document.getElementById('sidebarParticleEffectStatus');
+            const openParticlePickerBtn = document.getElementById('openParticlePickerBtn');
+
+            isParticleEffectEnabled = sidebarParticleEffectToggle.checked;
+
+            if (isParticleEffectEnabled) {
+                sidebarParticleEffectStatus.textContent = 'Aktif';
+                sidebarParticleEffectStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarParticleEffectStatus.classList.add('text-green-600', 'dark:text-green-400');
+                openParticlePickerBtn.disabled = false; // Enable picker button
+                document.body.addEventListener('click', handleParticleEffect);
+                document.body.addEventListener('touchstart', handleParticleEffect);
+            } else {
+                sidebarParticleEffectStatus.textContent = 'Nonaktif';
+                sidebarParticleEffectStatus.classList.remove('text-green-600', 'dark:text-red-400');
+                sidebarParticleEffectStatus.classList.add('text-red-600', 'dark:text-red-400');
+                openParticlePickerBtn.disabled = true; // Disable picker button
+                document.body.removeEventListener('click', handleParticleEffect);
+                document.body.removeEventListener('touchstart', handleParticleEffect);
+            }
+            localStorage.setItem('isParticleEffectEnabled', JSON.stringify(isParticleEffectEnabled));
+        }
+
+        /**
+         * Opens the particle picker modal.
+         */
+        function openParticlePicker() {
+            const modal = document.getElementById('particlePickerModal');
+            const grid = document.getElementById('particleGrid');
+            grid.innerHTML = '';
+
+            // Initialize temporary selection with current selected particles
+            tempSelectedParticles = [...selectedParticles];
+
+            allAvailableParticles.forEach(emoji => {
+                const item = document.createElement('div');
+                item.className = 'particle-item';
+                item.textContent = emoji;
+                item.dataset.emoji = emoji; // Store emoji in dataset for easy retrieval
+
+                if (tempSelectedParticles.includes(emoji)) {
+                    item.classList.add('selected');
+                }
+                item.onclick = () => toggleParticleSelection(emoji, item);
+                grid.appendChild(item);
+            });
+
+            modal.classList.add('active');
+        }
+
+        /**
+         * Toggles the selection of a particle in the picker modal.
+         * @param {string} emoji - The emoji character.
+         * @param {HTMLElement} element - The particle item element.
+         */
+        function toggleParticleSelection(emoji, element) {
+            const index = tempSelectedParticles.indexOf(emoji);
+            if (index > -1) {
+                tempSelectedParticles.splice(index, 1); // Remove if already selected
+                element.classList.remove('selected');
+            } else {
+                tempSelectedParticles.push(emoji); // Add if not selected
+                element.classList.add('selected');
+            }
+        }
+
+        /**
+         * Applies the selected particles and closes the modal.
+         */
+        function applySelectedParticles() {
+            if (tempSelectedParticles.length === 0) {
+                showAlert('Anda harus memilih setidaknya satu partikel.', 'Peringatan');
+                return;
+            }
+            selectedParticles = [...tempSelectedParticles]; // Update global selected particles
+            localStorage.setItem('selectedParticles', JSON.stringify(selectedParticles));
+            closeParticlePicker();
+            showAlert('Partikel berhasil diperbarui!', 'Berhasil');
+        }
+
+        /**
+         * Closes the particle picker modal.
+         */
+        function closeParticlePicker() {
+            document.getElementById('particlePickerModal').classList.remove('active');
+        }
+
+
+        /**
+         * Applies all saved states (theme, sensor, kids mode, background, gemini search, incognito mode, custom search, search saver, search history, translation, login) on page load.
+         */
+        function applyAllSavedStates() {
+            const body = document.body;
+
+            // Load login state first
+            const savedLoggedInUser = localStorage.getItem('loggedInUser');
+            if (savedLoggedInUser) {
+                loggedInUser = JSON.parse(savedLoggedInUser);
+                isLoggedIn = true;
+            } else {
+                isLoggedIn = false;
+                loggedInUser = null;
+            }
+
+            // Load isKidsModeForcedByAge from localStorage
+            const savedIsKidsModeForcedByAge = localStorage.getItem('isKidsModeForcedByAge');
+            if (savedIsKidsModeForcedByAge !== null) {
+                isKidsModeForcedByAge = JSON.parse(savedIsKidsModeForcedByAge);
+            } else {
+                isKidsModeForcedByAge = false;
+            }
+
+            // Load other states
+            const savedSensorState = localStorage.getItem('searchSensorEnabled');
+            if (savedSensorState !== null) {
+                isSearchSensorEnabled = JSON.parse(savedSensorState);
+            } else {
+                isSearchSensorEnabled = true;
+            }
+
+            const savedLastSearchSensorStateBeforeIncognito = localStorage.getItem('lastSearchSensorStateBeforeIncognito');
+            if (savedLastSearchSensorStateBeforeIncognito !== null) {
+                lastSearchSensorStateBeforeIncognito = JSON.parse(savedLastSearchSensorStateBeforeIncognito);
+            } else {
+                lastSearchSensorStateBeforeIncognito = isSearchSensorEnabled;
+            }
+
+            const savedKidsModeState = localStorage.getItem('isKidsModeEnabled');
+            if (savedKidsModeState !== null) {
+                isKidsModeEnabled = JSON.parse(savedKidsModeState);
+            } else {
+                isKidsModeEnabled = false;
+            }
+
+            const savedLastKidsModeStateBeforeIncognito = localStorage.getItem('lastKidsModeStateBeforeIncognito');
+            if (savedLastKidsModeStateBeforeIncognito !== null) {
+                lastKidsModeStateBeforeIncognito = JSON.parse(savedLastKidsModeStateBeforeIncognito);
+            } else {
+                lastKidsModeStateBeforeIncognito = isKidsModeEnabled;
+            }
+
+            const savedBackgroundSelectionMode = localStorage.getItem('isBackgroundSelectionMode');
+            if (savedBackgroundSelectionMode !== null) {
+                isBackgroundSelectionMode = JSON.parse(savedBackgroundSelectionMode);
+            }
+
+            const savedGeminiSearchState = localStorage.getItem('isGeminiSearchEnabled');
+            if (savedGeminiSearchState !== null) {
+                isGeminiSearchEnabled = JSON.parse(savedGeminiSearchState);
+            }
+
+            const savedIncognitoModeState = localStorage.getItem('isIncognitoModeEnabled');
+            if (savedIncognitoModeState !== null) {
+                isIncognitoModeEnabled = JSON.parse(savedIncognitoModeState);
+            }
+
+            // New: Load Custom Search state
+            const savedCustomSearchState = localStorage.getItem('isCustomSearchEnabled');
+            if (savedCustomSearchState !== null) {
+                isCustomSearchEnabled = JSON.parse(savedCustomSearchState);
+            } else {
+                isCustomSearchEnabled = false;
+            }
+
+            // New: Load Search Saver state (must be loaded before theme, custom search, and quick search are applied)
+            const savedSearchSaverState = localStorage.getItem('isSearchSaverEnabled');
+            if (savedSearchSaverState !== null) {
+                isSearchSaverEnabled = JSON.parse(savedSearchSaverState);
+            } else {
+                isSearchSaverEnabled = false;
+            }
+
+            // New: Load High Contrast Mode state
+            const savedHighContrastMode = localStorage.getItem('isHighContrastModeEnabled');
+            if (savedHighContrastMode !== null) {
+                isHighContrastModeEnabled = JSON.parse(savedHighContrastMode);
+            } else {
+                isHighContrastModeEnabled = false;
+            }
+
+            // New: Load Font Size Index
+            const savedFontSizeIndex = localStorage.getItem('currentFontSizeIndex');
+            if (savedFontSizeIndex !== null) {
+                currentFontSizeIndex = JSON.parse(savedFontSizeIndex);
+            } else {
+                currentFontSizeIndex = 1; // Default to normal size
+            }
+
+            // New: Load Focus Mode state
+            const savedFocusMode = localStorage.getItem('isFocusModeEnabled');
+            if (savedFocusMode !== null) {
+                isFocusModeEnabled = JSON.parse(savedFocusMode);
+            } else {
+                isFocusModeEnabled = false;
+            }
+
+            // New: Load Particle Effect state
+            const savedParticleEffect = localStorage.getItem('isParticleEffectEnabled');
+            if (savedParticleEffect !== null) {
+                isParticleEffectEnabled = JSON.parse(savedParticleEffect);
+            } else {
+                isParticleEffectEnabled = false; // Default to off
+            }
+
+            // New: Load selected particles
+            const savedSelectedParticles = localStorage.getItem('selectedParticles');
+            if (savedSelectedParticles) {
+                selectedParticles = JSON.parse(savedSelectedParticles);
+                if (selectedParticles.length === 0) { // Ensure there's at least one particle if none saved
+                    selectedParticles = ['✨'];
+                }
+            } else {
+                selectedParticles = ['✨']; // Default if nothing saved
+            }
+
+
+            loadSearchHistory();
+            clearUploadedImage(); // New: Clear any residual image data on load
+
+            // Get all UI elements
+            const sidebarSearchSensorToggle = document.getElementById('sidebarSearchSensorToggle');
+            const sidebarSensorStatus = document.getElementById('sidebarSensorStatus');
+            const sidebarKidsModeToggle = document.getElementById('sidebarKidsModeToggle');
+            const sidebarKidsModeStatus = document.getElementById('sidebarKidsModeStatus');
+            const sidebarIncognitoModeToggle = document.getElementById('sidebarIncognitoModeToggle');
+            const sidebarIncognitoModeStatus = document.getElementById('sidebarIncognitoModeStatus');
+            const sidebarBackgroundToggle = document.getElementById('sidebarBackgroundToggle');
+            const sidebarBackgroundStatus = document.getElementById('sidebarBackgroundStatus');
+            const sidebarGeminiSearchToggle = document.getElementById('sidebarGeminiSearchToggle');
+            const sidebarGeminiSearchStatus = document.getElementById('sidebarGeminiSearchStatus');
+            const loggedInUserDisplay = document.getElementById('loggedInUserDisplay');
+            const logoutButton = document.getElementById('logoutButton');
+            const sidebarHighContrastToggle = document.getElementById('sidebarHighContrastToggle'); // New
+            const sidebarHighContrastStatus = document.getElementById('sidebarHighContrastStatus'); // New
+            const sidebarFocusModeToggle = document.getElementById('sidebarFocusModeToggle'); // New
+            const sidebarFocusModeStatus = document.getElementById('sidebarFocusModeStatus'); // New
+            const quickSearchSuggestions = document.getElementById('quickSearchSuggestions'); // New
+            const searchEngineOptions = document.getElementById('searchEngineOptions'); // New
+            const footer = document.querySelector('footer'); // New
+            const searchResults = document.getElementById('searchResults'); // New
+            const sidebarCustomSearchToggle = document.getElementById('sidebarCustomSearchToggle'); // New
+            const sidebarCustomSearchStatus = document.getElementById('sidebarCustomSearchStatus'); // New
+            const customSearchControls = document.getElementById('customSearchControls'); // New
+            const sidebarSearchSaverToggle = document.getElementById('sidebarSearchSaverToggle'); // New
+            const sidebarSearchSaverStatus = document.getElementById('sidebarSearchSaverStatus'); // New
+            const geminiVisualSearchControls = document.getElementById('geminiVisualSearchControls');
+            const easySearchSection = document.getElementById('easySearchSection'); // New
+            const sidebarParticleEffectToggle = document.getElementById('sidebarParticleEffectToggle'); // New
+            const sidebarParticleEffectStatus = document.getElementById('sidebarParticleEffectStatus'); // New
+            const openParticlePickerBtn = document.getElementById('openParticlePickerBtn'); // New
+
+
+            // Update login UI
+            if (isLoggedIn) {
+                loggedInUserDisplay.textContent = `Selamat datang, ${loggedInUser.account}!`;
+                logoutButton.classList.remove('hidden');
+            } else {
+                loggedInUserDisplay.textContent = '';
+                logoutButton.classList.add('hidden');
+            }
+
+            // Apply Kids Mode based on age (highest priority for Kids Mode)
+            if (loggedInUser && loggedInUser.age < 15) {
+                isKidsModeForcedByAge = true;
+                isKidsModeEnabled = true;
+                sidebarKidsModeToggle.checked = true;
+                sidebarKidsModeToggle.disabled = true; // Disable manual toggle
+                sidebarKidsModeStatus.textContent = 'Aktif (Umur)';
+                sidebarKidsModeStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                sidebarKidsModeStatus.classList.add('text-green-600', 'dark:text-green-400');
+            } else {
+                isKidsModeForcedByAge = false;
+                // If not forced by age, apply saved or default Kids Mode state
+                sidebarKidsModeToggle.checked = isKidsModeEnabled;
+                sidebarKidsModeToggle.disabled = false;
+                sidebarKidsModeStatus.textContent = isKidsModeEnabled ? 'Aktif' : 'Nonaktif';
+                sidebarKidsModeStatus.classList.toggle('text-green-600', isKidsModeEnabled);
+                sidebarKidsModeStatus.classList.toggle('text-red-600', !isKidsModeEnabled);
+                sidebarKidsModeStatus.classList.toggle('dark:text-green-400', isKidsModeEnabled);
+                sidebarKidsModeStatus.classList.toggle('dark:text-red-400', !isKidsModeEnabled);
+            }
+            localStorage.setItem('isKidsModeForcedByAge', JSON.stringify(isKidsModeForcedByAge));
+            localStorage.setItem('isKidsModeEnabled', JSON.stringify(isKidsModeEnabled));
+
+
+            // Apply Incognito Mode effects (next priority for sensor)
+            sidebarIncognitoModeToggle.checked = isIncognitoModeEnabled;
+            sidebarIncognitoModeStatus.textContent = isIncognitoModeEnabled ? 'Aktif' : 'Nonaktif';
+            sidebarIncognitoModeStatus.classList.toggle('text-green-600', isIncognitoModeEnabled);
+            sidebarIncognitoModeStatus.classList.toggle('text-red-600', !isIncognitoModeEnabled);
+            sidebarIncognitoModeStatus.classList.toggle('dark:text-green-400', isIncognitoModeEnabled);
+            sidebarIncognitoModeStatus.classList.toggle('dark:text-red-400', !isIncognitoModeEnabled);
+
+            if (isIncognitoModeEnabled) {
+                // Incognito forces Search Sensor OFF and disables its toggle
+                isSearchSensorEnabled = false;
+                sidebarSearchSensorToggle.checked = false;
+                sidebarSearchSensorToggle.disabled = true; // Always disabled
+                sidebarSensorStatus.textContent = 'Nonaktif (Mode Samaran)';
+                sidebarSensorStatus.classList.remove('text-green-600', 'dark:text-green-400');
+                sidebarSensorStatus.classList.add('text-red-600', 'dark:text-red-400');
+            } else {
+                // If Incognito is OFF, apply Kids Mode's effect on sensor, or default to ON
+                if (isKidsModeEnabled) { // This now correctly reflects if Kids Mode is active (by age or restored)
+                    isSearchSensorEnabled = true;
+                    sidebarSearchSensorToggle.checked = true;
+                    sidebarSensorStatus.textContent = 'Aktif (Mode Anak)';
+                    sidebarSensorStatus.classList.remove('text-red-600', 'dark:text-red-400');
+                    sidebarSensorStatus.classList.add('text-green-600', 'dark:text-green-400');
+                } else {
+                    isSearchSensorEnabled = true;
+                    sidebarSearchSensorToggle.checked = true;
+                    sidebarSensorStatus.textContent = 'Aktif';
+                    sidebarSensorStatus.classList.toggle('text-green-600', true);
+                    sidebarSensorStatus.classList.toggle('text-red-600', false);
+                    sidebarSensorStatus.classList.toggle('dark:text-green-400', true);
+                    sidebarSensorStatus.classList.toggle('dark:text-red-400', false);
+                }
+                sidebarSearchSensorToggle.disabled = true;
+            }
+            localStorage.setItem('searchSensorEnabled', JSON.stringify(isSearchSensorEnabled));
+
+
+            // Apply Focus Mode (highest priority for UI visibility)
+            sidebarFocusModeToggle.checked = isFocusModeEnabled;
+            body.classList.toggle('focus-mode', isFocusModeEnabled);
+            sidebarFocusModeStatus.textContent = isFocusModeEnabled ? 'Aktif' : 'Nonaktif';
+            sidebarFocusModeStatus.classList.toggle('text-green-600', isFocusModeEnabled);
+            sidebarFocusModeStatus.classList.toggle('text-red-600', !isFocusModeEnabled);
+            sidebarFocusModeStatus.classList.toggle('dark:text-green-400', isFocusModeEnabled);
+            sidebarFocusModeStatus.classList.toggle('dark:text-red-400', !isFocusModeEnabled);
+
+            // Hide/show elements based on focus mode
+            quickSearchSuggestions.style.display = isFocusModeEnabled ? 'none' : '';
+            searchEngineOptions.style.display = isFocusModeEnabled ? 'none' : '';
+            footer.style.display = isFocusModeEnabled ? 'none' : '';
+            searchResults.style.display = isFocusModeEnabled ? 'none' : '';
+
+            // If focus mode is active, disable background selection mode and revert background
+            if (isFocusModeEnabled) {
+                isBackgroundSelectionMode = false;
+                document.getElementById('sidebarBackgroundToggle').checked = false;
+                document.getElementById('sidebarBackgroundStatus').textContent = 'Nonaktif (Mode Fokus)';
+                document.getElementById('sidebarBackgroundStatus').classList.remove('text-green-600', 'dark:text-green-400');
+                document.getElementById('sidebarBackgroundStatus').classList.add('text-red-600', 'dark:text-red-400');
+                document.getElementById('sidebarBackgroundToggle').disabled = true; // Disable toggle
+                applyBackground(''); // Revert to default simple background
+            } else {
+                document.getElementById('sidebarBackgroundToggle').disabled = false; // Enable toggle
+                // Reapply background based on saved state or default
+                isBackgroundSelectionMode = localStorage.getItem('isBackgroundSelectionMode') === 'true';
+                document.getElementById('sidebarBackgroundToggle').checked = isBackgroundSelectionMode;
+                document.getElementById('sidebarBackgroundStatus').textContent = isBackgroundSelectionMode ? 'Aktif' : 'Nonaktif';
+                sidebarBackgroundStatus.classList.toggle('text-green-600', isBackgroundSelectionMode);
+                sidebarBackgroundStatus.classList.toggle('text-red-600', !isBackgroundSelectionMode);
+                sidebarBackgroundStatus.classList.toggle('dark:text-green-400', isBackgroundSelectionMode);
+                sidebarBackgroundStatus.classList.toggle('dark:text-red-400', !isBackgroundSelectionMode);
+                applyBackground(selectedBackground); // Reapply previously selected background
+            }
+
+
+            // Apply other states (after focus mode has potentially hidden elements)
+            sidebarBackgroundToggle.checked = isBackgroundSelectionMode;
+            sidebarBackgroundStatus.textContent = isBackgroundSelectionMode ? 'Aktif' : 'Nonaktif';
+            sidebarBackgroundStatus.classList.toggle('text-green-600', isBackgroundSelectionMode);
+            sidebarBackgroundStatus.classList.toggle('text-red-600', !isBackgroundSelectionMode);
+            sidebarBackgroundStatus.classList.toggle('dark:text-green-400', isBackgroundSelectionMode);
+            sidebarBackgroundStatus.classList.toggle('dark:text-red-400', !isBackgroundSelectionMode);
+            // No need to call toggleBackgroundSelectionMode() here as its logic is handled above
+
+            sidebarGeminiSearchToggle.checked = isGeminiSearchEnabled;
+            sidebarGeminiSearchStatus.textContent = isGeminiSearchEnabled ? 'Aktif' : 'Nonaktif';
+            sidebarGeminiSearchStatus.classList.toggle('text-green-600', isGeminiSearchEnabled);
+            sidebarGeminiSearchStatus.classList.toggle('text-red-600', !isGeminiSearchEnabled);
+            sidebarGeminiSearchStatus.classList.toggle('dark:text-green-400', isGeminiSearchEnabled);
+            sidebarGeminiSearchStatus.classList.toggle('dark:text-red-400', !isGeminiSearchEnabled);
+            toggleGeminiSearch(); // Call toggleGeminiSearch to set initial visibility of visual search controls
+
+            // Apply Search Saver state (must be applied before custom search, theme, and quick search UI updates)
+            sidebarSearchSaverToggle.checked = isSearchSaverEnabled;
+            sidebarSearchSaverStatus.textContent = isSearchSaverEnabled ? 'Aktif' : 'Nonaktif';
+            sidebarSearchSaverStatus.classList.toggle('text-green-600', isSearchSaverEnabled);
+            sidebarSearchSaverStatus.classList.toggle('text-red-600', !isSearchSaverEnabled);
+            sidebarSearchSaverStatus.classList.toggle('dark:text-green-400', isSearchSaverEnabled);
+            sidebarSearchSaverStatus.classList.toggle('dark:text-red-400', !isSearchSaverEnabled);
+            toggleSearchSaver(); // Call the toggle function to apply its effects
+
+            // New: Apply Custom Search state (after Search Saver has potentially disabled it)
+            sidebarCustomSearchToggle.checked = isCustomSearchEnabled;
+            sidebarCustomSearchStatus.textContent = isCustomSearchEnabled ? 'Aktif' : 'Nonaktif';
+            sidebarCustomSearchStatus.classList.toggle('text-green-600', isCustomSearchEnabled);
+            sidebarCustomSearchStatus.classList.toggle('text-red-600', !isCustomSearchEnabled);
+            sidebarCustomSearchStatus.classList.toggle('dark:text-green-400', isCustomSearchEnabled);
+            sidebarCustomSearchStatus.classList.toggle('dark:text-red-400', !isCustomSearchEnabled);
+            customSearchControls.classList.toggle('hidden', !isCustomSearchEnabled);
+            loadCustomSearchEngines(); // Re-load engines based on this state
+
+            // New: Apply High Contrast Mode
+            sidebarHighContrastToggle.checked = isHighContrastModeEnabled;
+            body.classList.toggle('high-contrast-mode', isHighContrastModeEnabled);
+            sidebarHighContrastStatus.textContent = isHighContrastModeEnabled ? 'Aktif' : 'Nonaktif';
+            sidebarHighContrastStatus.classList.toggle('text-green-600', isHighContrastModeEnabled);
+            sidebarHighContrastStatus.classList.toggle('text-red-600', !isHighContrastModeEnabled);
+            sidebarHighContrastStatus.classList.toggle('dark:text-green-400', isHighContrastModeEnabled);
+            sidebarHighContrastStatus.classList.toggle('dark:text-red-400', !isHighContrastModeEnabled);
+
+            // New: Apply Font Size
+            document.body.style.setProperty('--base-font-size', fontSizes[currentFontSizeIndex]);
+            const currentFontSizeElement = document.getElementById('currentFontSize');
+            let statusText = 'Normal';
+            if (currentFontSizeIndex === 0) {
+                statusText = 'Kecil';
+            } else if (currentFontSizeIndex === fontSizes.length - 1) {
+                statusText = 'Besar';
+            } else if (currentFontSizeIndex > 1) {
+                statusText = 'Lebih Besar';
+            } else if (currentFontSizeIndex < 1) {
+                statusText = 'Lebih Kecil';
+            }
+            currentFontSizeElement.textContent = statusText;
+
+            // Apply Particle Effect state
+            sidebarParticleEffectToggle.checked = isParticleEffectEnabled;
+            sidebarParticleEffectStatus.textContent = isParticleEffectEnabled ? 'Aktif' : 'Nonaktif';
+            sidebarParticleEffectStatus.classList.toggle('text-green-600', isParticleEffectEnabled);
+            sidebarParticleEffectStatus.classList.toggle('text-red-600', !isParticleEffectEnabled);
+            sidebarParticleEffectStatus.classList.toggle('dark:text-green-400', isParticleEffectEnabled);
+            sidebarParticleEffectStatus.classList.toggle('dark:text-red-400', !isParticleEffectEnabled);
+            openParticlePickerBtn.disabled = !isParticleEffectEnabled; // Enable/disable picker button
+            // Re-attach/remove event listeners based on loaded state
+            if (isParticleEffectEnabled) {
+                document.body.addEventListener('click', handleParticleEffect);
+                document.body.addEventListener('touchstart', handleParticleEffect);
+            } else {
+                document.body.removeEventListener('click', handleParticleEffect);
+                document.body.removeEventListener('touchstart', handleParticleEffect);
+            }
+
+
+            updateQuickSearchSuggestions();
+            updateSearchInputPlaceholder();
+            displaySearchHistory();
+            renderSearchEngineButtons(); // Ensure buttons are rendered after all states are applied
+        }
+
+        // --- Bot Test Functions ---
+        /**
+         * Initializes the bot test modal and hides the main content.
+         */
+        function initBotTest() {
+            const botTestModal = document.getElementById('botTestModal');
+            const mainContentWrapper = document.getElementById('mainContentWrapper');
+            const botTestClickArea = document.getElementById('botTestClickArea');
+            const botTestInput = document.getElementById('botTestInput');
+            const botTestContinueBtn = document.getElementById('botTestContinueBtn');
+            const botTestMessage = document.getElementById('botTestMessage');
+            const clickCountDisplay = document.getElementById('clickCountDisplay');
+
+            // Reset test state
+            botTestClickCount = 0;
+            botTestTypingStartTime = 0;
+            botTestInput.value = '';
+            botTestInput.classList.add('hidden');
+            botTestInput.disabled = true;
+            botTestContinueBtn.classList.add('hidden');
+            botTestContinueBtn.disabled = true;
+            botTestClickArea.disabled = false; // Enable click area initially
+            botTestMessage.textContent = `Klik area ini ${botTestRequiredClicks} kali.`;
+            clickCountDisplay.textContent = `(0/${botTestRequiredClicks})`;
+
+            botTestModal.classList.remove('hidden');
+            mainContentWrapper.classList.add('hidden'); // Hide main content
+
+            // Attach event listeners for bot test
+            botTestClickArea.addEventListener('click', handleBotTestClick);
+            botTestInput.addEventListener('input', handleBotTestTyping);
+            botTestContinueBtn.addEventListener('click', hideBotTestModal);
+        }
+
+        /**
+         * Handles clicks on the bot test area.
+         */
+        function handleBotTestClick() {
+            const botTestClickArea = document.getElementById('botTestClickArea');
+            const clickCountDisplay = document.getElementById('clickCountDisplay');
+            const botTestMessage = document.getElementById('botTestMessage');
+            const botTestInput = document.getElementById('botTestInput');
+
+            botTestClickCount++;
+            clickCountDisplay.textContent = `(${botTestClickCount}/${botTestRequiredClicks})`;
+
+            if (botTestClickCount >= botTestRequiredClicks) {
+                botTestClickArea.disabled = true; // Disable further clicks
+                botTestClickArea.removeEventListener('click', handleBotTestClick); // Remove listener
+                botTestMessage.textContent = `Hebat! Sekarang ketik 2 kata berikut: "${botTestRequiredWords.join(' ')}"`;
+                botTestInput.classList.remove('hidden');
+                botTestInput.disabled = false;
+                botTestInput.focus();
+                botTestTypingStartTime = Date.now(); // Start timer for typing
+            }
+        }
+
+        /**
+         * Handles typing in the bot test input field.
+         */
+        function handleBotTestTyping() {
+            const botTestInput = document.getElementById('botTestInput');
+            const botTestMessage = document.getElementById('botTestMessage');
+            const botTestContinueBtn = document.getElementById('botTestContinueBtn');
+
+            const typedWords = botTestInput.value.toLowerCase().trim();
+            const expectedWords = botTestRequiredWords.join(' ').toLowerCase();
+
+            if (typedWords === expectedWords) {
+                const typingDuration = Date.now() - botTestTypingStartTime;
+
+                if (typingDuration >= botTestMinTypingTime && typingDuration <= botTestMaxTypingTime) {
+                    botTestMessage.textContent = 'Verifikasi berhasil! Selamat datang.';
+                    botTestInput.disabled = true;
+                    botTestContinueBtn.classList.remove('hidden');
+                    botTestContinueBtn.disabled = false;
+                } else {
+                    // Bot detected (too fast or too slow)
+                    let reason = '';
+                    if (typingDuration < botTestMinTypingTime) {
+                        reason = 'terlalu cepat';
+                    } else {
+                        reason = 'terlalu lambat';
+                    }
+                    botTestMessage.textContent = `Verifikasi gagal. Kecepatan penulisan Anda ${reason}. Silakan coba lagi.`;
+                    setTimeout(initBotTest, 2000); // Reset test after 2 seconds
+                }
+            } else if (typedWords.length >= expectedWords.length && typedWords !== expectedWords) {
+                // If typed words are already longer than expected but don't match
+                botTestMessage.textContent = 'Verifikasi gagal. Kata tidak sesuai. Silakan coba lagi.';
+                setTimeout(initBotTest, 2000); // Reset test after 2 seconds
+            }
+        }
+
+        /**
+         * Hides the bot test modal and shows the main content.
+         */
+        function hideBotTestModal() {
+            document.getElementById('botTestModal').classList.add('hidden');
+            document.getElementById('mainContentWrapper').classList.remove('hidden'); // Show main content
+            // Remove event listeners to prevent memory leaks and unintended behavior
+            document.getElementById('botTestClickArea').removeEventListener('click', handleBotTestClick);
+            document.getElementById('botTestInput').removeEventListener('input', handleBotTestTyping);
+            document.getElementById('botTestContinueBtn').removeEventListener('click', hideBotTestModal);
+        }
+
+        // --- Login/Registration Functions ---
+        /**
+         * Displays the login modal and hides other content.
+         */
+        function showLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+            document.getElementById('botTestModal').classList.add('hidden'); // Hide bot test if visible
+            document.getElementById('mainContentWrapper').classList.add('hidden'); // Hide main content
+            document.getElementById('loginMessage').classList.add('hidden'); // Clear previous messages
+            document.getElementById('loginAccount').value = '';
+            document.getElementById('loginAge').value = '';
+        }
+
+        /**
+         * Handles user registration.
+         */
+        function registerUser() {
+            const account = document.getElementById('loginAccount').value.trim();
+            const age = parseInt(document.getElementById('loginAge').value.trim());
+            const loginMessage = document.getElementById('loginMessage');
+
+            if (!account || isNaN(age) || age < 1) {
+                loginMessage.textContent = 'Harap isi semua bidang dengan benar (Akun dan Umur).';
+                loginMessage.classList.remove('hidden');
+                return;
+            }
+
+            // Peringatan Keamanan: Ini SANGAT TIDAK aman untuk produksi.
+            // Kata sandi TIDAK boleh disimpan dalam teks biasa atau di localStorage.
+            // Gunakan server backend dengan hashing kata sandi yang kuat.
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+
+            if (users[account]) {
+                loginMessage.textContent = 'Akun sudah terdaftar. Silakan login.';
+                loginMessage.classList.remove('hidden');
+                return;
+            }
+
+            users[account] = { age: age }; // Store only age
+            localStorage.setItem('users', JSON.stringify(users));
+            loginMessage.textContent = 'Pendaftaran berhasil! Silakan login.';
+            loginMessage.classList.remove('hidden');
+            showAlert('Pendaftaran berhasil! Silakan login.', 'Berhasil');
+        }
+
+        /**
+         * Handles user login.
+         */
+        function loginUser() {
+            const account = document.getElementById('loginAccount').value.trim();
+            const age = parseInt(document.getElementById('loginAge').value.trim()); // Get age for login check
+            const loginMessage = document.getElementById('loginMessage');
+
+            const users = JSON.parse(localStorage.getItem('users') || '{}');
+
+            // Check if account exists and age matches (simplified login)
+            if (!users[account] || users[account].age !== age) {
+                loginMessage.textContent = 'Akun atau umur salah.';
+                loginMessage.classList.remove('hidden');
+                return;
+            }
+
+            loggedInUser = { account: account, age: users[account].age };
+            isLoggedIn = true;
+            localStorage.setItem('loggedInUser', JSON.stringify(loggedInUser));
+            localStorage.setItem('isLoggedIn', 'true'); // Store login status
+
+            document.getElementById('loginModal').classList.add('hidden'); // Hide login modal
+            document.getElementById('loggedInUserDisplay').textContent = `Selamat datang, ${loggedInUser.account}!`;
+            document.getElementById('logoutButton').classList.remove('hidden');
+
+            applyKidsModeBasedOnAge(); // Apply kids mode based on logged-in user's age
+            applyAllSavedStates(); // Re-apply all states to ensure UI is consistent
+            initBotTest(); // Proceed to bot test
+        }
+
+        /**
+         * Handles user logout.
+         */
+        function logoutUser() {
+            showConfirm('Apakah Anda yakin ingin logout?', 'Konfirmasi Logout').then(confirmed => {
+                if (confirmed) {
+                    isLoggedIn = false;
+                    loggedInUser = null;
+                    isKidsModeForcedByAge = false; // Reset age-forced kids mode on logout
+                    localStorage.removeItem('loggedInUser');
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('isKidsModeForcedByAge'); // Clear this specific flag
+
+                    // Reset kids mode and sensor to default/non-forced state
+                    isKidsModeEnabled = false; // Default to off
+                    isSearchSensorEnabled = true; // Default to on
+                    localStorage.setItem('isKidsModeEnabled', 'false');
+                    localStorage.setItem('searchSensorEnabled', 'true');
+
+                    showAlert('Anda telah logout.', 'Logout Berhasil');
+                    applyAllSavedStates(); // Re-apply all states to reset UI
+                    showLoginModal(); // Show login modal after logout
+                }
+            });
+        }
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load all saved states to determine login status and other settings
+            applyAllSavedStates();
+
+            // Check if user is logged in
+            if (!isLoggedIn) {
+                showLoginModal(); // Show login modal if not logged in
+            } else {
+                // If logged in, proceed to bot test
+                initBotTest();
+            }
+
+            // Inisialisasi mesin pencari default untuk EasySearch
+            setSearchEngine('google'); // Set default after loading custom engines
+
+            // Event listener for hamburger menu toggle
+            document.getElementById('menuToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('sidebarCloseBtn').addEventListener('click', toggleSidebar);
+
+            // Event listeners for sidebar toggles
+            document.getElementById('sidebarThemeToggle').addEventListener('change', toggleTheme);
+            document.getElementById('sidebarSearchSensorToggle').addEventListener('change', toggleSearchSensor);
+            document.getElementById('sidebarKidsModeToggle').addEventListener('change', toggleKidsMode);
+            document.getElementById('sidebarBackgroundToggle').addEventListener('change', toggleBackgroundSelectionMode);
+            document.getElementById('sidebarGeminiSearchToggle').addEventListener('change', toggleGeminiSearch);
+            document.getElementById('sidebarIncognitoModeToggle').addEventListener('change', toggleIncognitoMode);
+            document.getElementById('sidebarCustomSearchToggle').addEventListener('change', toggleCustomSearch); // New event listener for custom search toggle
+            document.getElementById('sidebarSearchSaverToggle').addEventListener('change', toggleSearchSaver); // New event listener for search saver toggle
+            document.getElementById('clearHistoryBtn').addEventListener('click', clearSearchHistory);
+
+            // New: Event listeners for accessibility features
+            document.getElementById('sidebarHighContrastToggle').addEventListener('change', toggleHighContrastMode);
+            document.getElementById('decreaseFontSizeBtn').addEventListener('click', () => adjustFontSize(-1));
+            document.getElementById('increaseFontSizeBtn').addEventListener('click', () => adjustFontSize(1));
+            document.getElementById('sidebarFocusModeToggle').addEventListener('change', toggleFocusMode); // New event listener for Focus Mode
+
+            // Event listener for article summary modal close button
+            document.getElementById('articleSummaryCloseBtn').addEventListener('click', closeArticleSummaryModal);
+
+            // New: Event listeners for visual search
+            document.getElementById('imageUploadInput').addEventListener('change', handleImageUpload);
+            // The visualSearchBtn click listener is now implicitly handled by handleMainButtonAction
+            document.getElementById('clearImageBtn').addEventListener('click', clearUploadedImage);
+
+            // Event listeners for login/logout
+            document.getElementById('registerBtn').addEventListener('click', registerUser);
+            document.getElementById('loginBtn').addEventListener('click', loginUser);
+            document.getElementById('logoutButton').addEventListener('click', logoutUser);
+
+            // Event listener for custom search engine
+            document.getElementById('addCustomEngineBtn').addEventListener('click', addCustomSearchEngine);
+
+            // Event listener for voice search button
+            document.getElementById('voiceSearchBtn').addEventListener('click', startVoiceSearch);
+
+            // New: Event listener for background picker close button
+            document.getElementById('backgroundPickerCloseBtn').addEventListener('click', closeBackgroundPicker);
+
+            // New: Event listeners for particle effects and picker
+            document.getElementById('sidebarParticleEffectToggle').addEventListener('change', toggleParticleEffect);
+            document.getElementById('openParticlePickerBtn').addEventListener('click', openParticlePicker);
+            document.getElementById('particlePickerCloseBtn').addEventListener('click', closeParticlePicker);
+            document.getElementById('applySelectedParticlesBtn').addEventListener('click', applySelectedParticles);
+
+            // Initial setup for particle effect based on loaded state
+            if (isParticleEffectEnabled) {
+                document.body.addEventListener('click', handleParticleEffect);
+                document.body.addEventListener('touchstart', handleParticleEffect);
+            }
+        });
+    </script>
+</body>
+</html>
+ 

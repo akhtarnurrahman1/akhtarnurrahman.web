@@ -1,0 +1,4408 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Al-Qur'an</title>
+    <!-- Tailwind CSS CDN untuk styling yang cepat dan responsif -->
+    <script src="https://cdn.tailwindcss.com">
+        // Toggle command list
+        const toggle = document.getElementById("command-toggle");
+        const list = document.getElementById("command-list");
+        const inputBox = document.getElementById("user-input");
+
+        if (toggle) {
+            toggle.addEventListener("change", () => {
+                list.classList.toggle("hidden", !toggle.checked);
+            });
+        }
+
+        if (list) {
+            list.querySelectorAll("button").forEach(btn => {
+                btn.addEventListener("click", () => {
+                    inputBox.value = btn.textContent;
+                    inputBox.focus();
+                });
+            });
+        }
+
+    </script>
+    <style>
+        /* Menggunakan font Inter dari Google Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .chat-container {
+            max-height: 80vh;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f3f4f6;
+        }
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-container::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 10px;
+        }
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
+            border: 2px solid #f3f4f6;
+        }
+        /* Styling untuk loading indicator */
+        .dot-pulse {
+            position: relative;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #6366f1;
+            color: #6366f1;
+            animation: dotPulse 1.5s infinite ease-in-out;
+        }
+        .dot-pulse::before, .dot-pulse::after {
+            content: '';
+            position: absolute;
+            display: inline-block;
+            left: -15px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #6366f1;
+            color: #6366f1;
+        }
+        .dot-pulse::before {
+            animation: dotPulseBefore 1.5s infinite ease-in-out;
+        }
+        .dot-pulse::after {
+            left: 15px;
+            animation: dotPulseAfter 1.5s infinite ease-in-out;
+        }
+        @keyframes dotPulseBefore {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(0.75);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        @keyframes dotPulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.25);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        @keyframes dotPulseAfter {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(0.75);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <!-- Kontainer utama aplikasi chatbot -->
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col h-[90vh]">
+        
+        <!-- Header Chat -->
+        <div class="bg-indigo-600 p-4 text-white text-center text-xl font-bold rounded-t-xl">
+            AI dalil
+        </div>
+
+        <!-- Toggle untuk Command List -->
+        <div class="flex items-center space-x-2 p-2 bg-gray-100 border-b">
+            <label for="command-toggle" class="font-medium text-gray-700">https://www.transfernow.net/dl/20250820gXDoyRfnd</label>
+            <input id="command-toggle" type="checkbox" class="w-5 h-5" />
+        </div>
+
+        <!-- List Command -->
+        <div id="command-list" class="hidden p-4 space-y-2 bg-gray-50 border-b">
+            <button class="px-3 py-2 bg-indigo-100 rounded-lg w-full text-left">Tentang Shalat</button>
+            <button class="px-3 py-2 bg-indigo-100 rounded-lg w-full text-left">Tentang Sabar</button>
+            <button class="px-3 py-2 bg-indigo-100 rounded-lg w-full text-left">Tentang Sedekah</button>
+            <button class="px-3 py-2 bg-indigo-100 rounded-lg w-full text-left">Tentang Persaudaraan</button>
+            <button class="px-3 py-2 bg-indigo-100 rounded-lg w-full text-left">Tentang Ikhlas</button>
+        </div>
+
+        <!-- Kotak chat untuk menampilkan pesan -->
+        <div id="chat-box" class="flex-1 p-6 space-y-4 overflow-y-auto chat-container">
+            <!-- Pesan dari bot akan ditambahkan di sini -->
+            <div class="flex justify-start">
+                <div class="bg-gray-300 text-gray-800 rounded-lg py-2 px-4 max-w-xs">
+                    Assalamualaikum! Silakan ketik pertanyaan tentang Islam, saya akan carikan dalilnya.
+                </div>
+            </div>
+            <!-- Elemen loading untuk AI akan ditambahkan di sini secara dinamis -->
+        </div>
+
+        <!-- Form untuk input pesan -->
+        <div class="p-4 bg-gray-50 border-t border-gray-200">
+            <form id="chat-form" class="flex space-x-2">
+                <input 
+                    type="text" 
+                    id="user-input" 
+                    placeholder="Contoh: tentang sabar, tentang sedekah..." 
+                    class="flex-1 px-4 py-2 bg-gray-200 rounded-full border-2 border-transparent focus:outline-none focus:border-indigo-500 transition-colors"
+                    autocomplete="off"
+                />
+                <button 
+                    type="submit" 
+                    id="send-button"
+                    class="bg-indigo-500 text-white p-2 rounded-full shadow-lg hover:bg-indigo-600 transition-colors transform hover:scale-105 active:scale-95"
+                >
+                    <!-- Ikon pesawat kertas (send) dari SVG inline -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Skrip JavaScript untuk logika chatbot -->
+    <script>
+        // Data dari file "dalil_1-200.txt"
+        // Catatan: Ini adalah data dalil yang sudah ada sebelumnya.
+        const dalilText = `
+## 📖 20 Dalil Al-Qur’an & Hadis
+
+### 1. **Tentang Tauhid**
+
+**Qur’an:**
+﴿ قُلْ هُوَ ٱللَّهُ أَحَدٌ ﴾
+*“Katakanlah: Dialah Allah Yang Maha Esa.”* (QS. Al-Ikhlash: 1)
+
+---
+
+### 2. **Tentang Shalat**
+
+**Qur’an:**
+﴿ وَأَقِيمُوا۟ ٱلصَّلَوٰةَ وَءَاتُوا۟ ٱلزَّكَوٰةَ ﴾
+*“Dirikanlah shalat dan tunaikanlah zakat.”* (QS. Al-Baqarah: 43)
+
+---
+
+### 3. **Tentang Puasa**
+
+**Qur’an:**
+﴿ يَـٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ كُتِبَ عَلَيْكُمُ ٱلصِّيَامُ ﴾
+*“Wahai orang-orang yang beriman, diwajibkan atas kamu berpuasa.”* (QS. Al-Baqarah: 183)
+
+---
+
+### 4. **Tentang Haji**
+
+**Qur’an:**
+﴿ وَلِلَّهِ عَلَى ٱلنَّاسِ حِجُّ ٱلْبَيْتِ ﴾
+*“Mengerjakan haji adalah kewajiban manusia terhadap Allah.”* (QS. Ali Imran: 97)
+
+---
+
+### 5. **Tentang Zakat**
+
+**Qur’an:**
+﴿ خُذْ مِنْ أَمْوَٰلِهِمْ صَدَقَةً ﴾
+*“Ambillah zakat dari sebagian harta mereka.”* (QS. At-Taubah: 103)
+
+---
+
+### 6. **Larangan Syirik**
+
+**Qur’an:**
+﴿ إِنَّ ٱللَّهَ لَا يَغْفِرُ أَن يُشْرَكَ بِهِۦ ﴾
+*“Sesungguhnya Allah tidak mengampuni dosa syirik.”* (QS. An-Nisa: 48)
+
+---
+
+### 7. **Tentang Ikhlas**
+
+**Hadis:**
+« إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ »
+*“Sesungguhnya amal itu tergantung niatnya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 8. **Tentang Menuntut Ilmu**
+
+**Hadis:**
+« طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ »
+*“Menuntut ilmu itu wajib bagi setiap muslim.”* (HR. Ibnu Majah)
+
+---
+
+### 9. **Tentang Menyebarkan Salam**
+
+**Hadis:**
+« أَفْشُوا السَّلَامَ بَيْنَكُمْ »
+*“Sebarkanlah salam di antara kalian.”* (HR. Muslim)
+
+---
+
+### 10. **Tentang Menjaga Amanah**
+
+**Qur’an:**
+﴿ إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَـٰنَـٰتِ ﴾
+*“Sesungguhnya Allah menyuruh kamu menyampaikan amanat kepada yang berhak menerimanya.”* (QS. An-Nisa: 58)
+
+---
+
+### 11. **Tentang Berbuat Baik kepada Orang Tua**
+
+**Qur’an:**
+﴿ وَبِٱلْوَٰلِدَيْنِ إِحْسَـٰنًا ﴾
+*“Berbuat baiklah kepada kedua orang tua.”* (QS. Al-Baqarah: 83)
+
+---
+
+### 12. **Tentang Sabar**
+
+**Qur’an:**
+﴿ إِنَّ ٱللَّهَ مَعَ ٱلصَّـٰبِرِينَ ﴾
+*“Sesungguhnya Allah bersama orang-orang yang sabar.”* (QS. Al-Baqarah: 153)
+
+---
+
+### 13. **Tentang Jujur**
+
+**Hadis:**
+« عَلَيْكُمْ بِالصِّدْقِ »
+*“Hendaklah kalian berlaku jujur.”* (HR. Muslim)
+
+---
+
+### 14. **Tentang Persaudaraan**
+
+**Qur’an:**
+﴿ إِنَّمَا ٱلْمُؤْمِنُونَ إِخْوَةٌ ﴾
+*“Sesungguhnya orang-orang mukmin itu bersaudara.”* (QS. Al-Hujurat: 10)
+
+---
+
+### 15. **Tentang Menghindari Ghibah**
+
+**Qur’an:**
+﴿ وَلَا يَغْتَب بَّعْضُكُم بَعْضًا ﴾
+*“Janganlah sebagian kamu menggunjing sebagian yang lain.”* (QS. Al-Hujurat: 12)
+
+---
+
+### 16. **Tentang Menolong Sesama**
+
+**Hadis:**
+« اللَّهُ فِي عَوْنِ الْعَبْدِ مَا كَانَ الْعَبْدُ فِي عَوْنِ أَخِيهِ »
+*“Allah akan menolong seorang hamba selama hamba itu menolong saudaranya.”* (HR. Muslim)
+
+---
+
+### 17. **Tentang Amanah Rasul**
+
+**Qur’an:**
+﴿ وَمَا يَنطِقُ عَنِ ٱلْهَوَىٰ \* إِنْ هُوَ إِلَّا وَحْيٌ يُوحَىٰ ﴾
+*“Dan tiadalah yang diucapkannya itu menurut kemauan hawa nafsunya. Ucapannya itu tiada lain hanyalah wahyu yang diwahyukan.”* (QS. An-Najm: 3-4)
+
+---
+
+### 18. **Tentang Keutamaan Sedekah**
+
+**Hadis:**
+« الصَّدَقَةُ تُطْفِئُ الْخَطِيئَةَ »
+*“Sedekah itu dapat memadamkan dosa.”* (HR. Tirmidzi)
+
+---
+
+### 19. **Tentang Rendah Hati**
+
+**Hadis:**
+« مَا تَوَاضَعَ أَحَدٌ لِلَّهِ إِلَّا رَفَعَهُ اللَّهُ »
+*“Tidaklah seseorang merendah diri karena Allah melainkan Allah akan meninggikan derajatnya.”* (HR. Muslim)
+
+---
+
+### 20. **Tentang Berpegang pada Al-Qur’an & Sunnah**
+
+**Hadis:**
+« تَرَكْتُ فِيكُمْ أَمْرَيْنِ لَنْ تَضِلُّوا مَا تَمَسَّكْتُمْ بِهِمَا: كِتَابَ اللَّهِ وَسُنَّتِي »
+*“Aku tinggalkan dua perkara, kalian tidak akan tersesat selama berpegang kepada keduanya: Kitabullah dan Sunnahku.”* (HR. Malik)
+
+---
+
+
+---
+
+## 📖 Dalil 21–40
+
+### 21. **Tentang Takwa**
+
+﴿ إِنَّ أَكْرَمَكُمْ عِندَ ٱللَّهِ أَتْقَىٰكُمْ ﴾
+*“Sesungguhnya yang paling mulia di antara kalian di sisi Allah ialah yang paling bertakwa.”* (QS. Al-Hujurat: 13)
+
+---
+
+### 22. **Tentang Membaca Al-Qur’an**
+
+« خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ »
+*“Sebaik-baik kalian adalah yang belajar Al-Qur’an dan mengajarkannya.”* (HR. Bukhari)
+
+---
+
+### 23. **Tentang Larangan Membunuh**
+
+﴿ وَلَا تَقْتُلُوا۟ ٱلنَّفْسَ ٱلَّتِى حَرَّمَ ٱللَّهُ ﴾
+*“Dan janganlah kamu membunuh jiwa yang diharamkan Allah.”* (QS. Al-Isra: 33)
+
+---
+
+### 24. **Tentang Husnuzhon (berbaik sangka)**
+
+« إِيَّاكُمْ وَالظَّنَّ فَإِنَّ الظَّنَّ أَكْذَبُ الْحَدِيثِ »
+*“Jauhilah prasangka, karena prasangka adalah sedusta-dustanya perkataan.”* (HR. Bukhari & Muslim)
+
+---
+
+### 25. **Tentang Persatuan Umat**
+
+﴿ وَٱعْتَصِمُوا۟ بِحَبْلِ ٱللَّهِ جَمِيعًۭا ﴾
+*“Berpeganglah kalian semuanya kepada tali Allah, dan janganlah bercerai-berai.”* (QS. Ali Imran: 103)
+
+---
+
+### 26. **Tentang Menepati Janji**
+
+﴿ وَأَوْفُوا۟ بِٱلْعَهْدِ ۖ إِنَّ ٱلْعَهْدَ كَانَ مَسْـُٔولًۭا ﴾
+*“Tepatilah janji; sesungguhnya janji itu pasti diminta pertanggungjawaban.”* (QS. Al-Isra: 34)
+
+---
+
+### 27. **Tentang Saling Mencintai**
+
+« لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لِأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ »
+*“Tidak beriman salah seorang di antara kalian hingga ia mencintai saudaranya sebagaimana ia mencintai dirinya sendiri.”* (HR. Bukhari & Muslim)
+
+---
+
+### 28. **Tentang Membalas Kebaikan**
+
+« مَنْ صُنِعَ إِلَيْهِ مَعْرُوفٌ فَلْيُكَافِئْهُ »
+*“Barangsiapa diberi kebaikan, hendaklah ia membalasnya.”* (HR. Abu Dawud)
+
+---
+
+### 29. **Tentang Cinta Dunia**
+
+« حُبُّ الدُّنْيَا رَأْسُ كُلِّ خَطِيئَةٍ »
+*“Cinta dunia adalah pangkal segala kesalahan.”* (HR. Baihaqi)
+
+---
+
+### 30. **Tentang Doa**
+
+﴿ ٱدْعُونِىٓ أَسْتَجِبْ لَكُمْ ﴾
+*“Berdoalah kepada-Ku, niscaya Aku perkenankan untukmu.”* (QS. Ghafir: 60)
+
+---
+
+### 31. **Tentang Bersyukur**
+
+﴿ لَئِن شَكَرْتُمْ لَأَزِيدَنَّكُمْ ﴾
+*“Jika kamu bersyukur, niscaya Aku tambah nikmat kepadamu.”* (QS. Ibrahim: 7)
+
+---
+
+### 32. **Tentang Zuhud**
+
+« ازْهَدْ فِي الدُّنْيَا يُحِبَّكَ اللَّهُ »
+*“Bersikap zuhudlah terhadap dunia, niscaya Allah mencintaimu.”* (HR. Ibnu Majah)
+
+---
+
+### 33. **Tentang Silaturahmi**
+
+« مَنْ أَحَبَّ أَنْ يُبْسَطَ لَهُ فِي رِزْقِهِ وَيُنْسَأَ لَهُ فِي أَثَرِهِ فَلْيَصِلْ رَحِمَهُ »
+*“Barangsiapa ingin dilapangkan rezekinya dan dipanjangkan umurnya, hendaklah ia menyambung silaturahmi.”* (HR. Bukhari & Muslim)
+
+---
+
+### 34. **Tentang Larangan Riba**
+
+﴿ وَأَحَلَّ ٱللَّهُ ٱلْبَيْعَ وَحَرَّمَ ٱلرِّبَوٰا۟ ﴾
+*“Allah menghalalkan jual beli dan mengharamkan riba.”* (QS. Al-Baqarah: 275)
+
+---
+
+### 35. **Tentang Istighfar**
+
+« وَاللَّهِ إِنِّي لَأَسْتَغْفِرُ اللَّهَ فِي الْيَوْمِ أَكْثَرَ مِنْ سَبْعِينَ مَرَّةً »
+*“Demi Allah, aku beristighfar kepada Allah lebih dari 70 kali dalam sehari.”* (HR. Bukhari)
+
+---
+
+### 36. **Tentang Kebersihan**
+
+« الطُّهُورُ شَطْرُ الْإِيمَانِ »
+*“Kebersihan adalah sebagian dari iman.”* (HR. Muslim)
+
+---
+
+### 37. **Tentang Hati yang Tenang**
+
+﴿ أَلَا بِذِكْرِ ٱللَّهِ تَطْمَئِنُّ ٱلْقُلُوبُ ﴾
+*“Ingatlah, hanya dengan mengingat Allah hati menjadi tenteram.”* (QS. Ar-Ra’d: 28)
+
+---
+
+### 38. **Tentang Menjaga Lisan**
+
+« مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الْآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ »
+*“Barangsiapa beriman kepada Allah dan hari akhir, hendaklah berkata baik atau diam.”* (HR. Bukhari & Muslim)
+
+---
+
+### 39. **Tentang Memaafkan**
+
+﴿ فَمَنْ عَفَا وَأَصْلَحَ فَأَجْرُهُۥ عَلَى ٱللَّهِ ﴾
+*“Barangsiapa memaafkan dan berbuat baik, maka pahalanya di sisi Allah.”* (QS. Asy-Syura: 40)
+
+---
+
+### 40. **Tentang Kematian**
+
+﴿ كُلُّ نَفْسٍ ذَآئِقَةُ ٱلْمَوْتِ ﴾
+*“Setiap jiwa pasti akan merasakan mati.”* (QS. Ali Imran: 185)
+
+---
+
+## 📖 Dalil 41–60
+
+### 41. **Tentang Taat kepada Rasul**
+
+﴿ أَطِيعُوا۟ ٱللَّهَ وَأَطِيعُوا۟ ٱلرَّسُولَ ﴾
+*“Taatilah Allah dan taatilah Rasul.”* (QS. An-Nisa: 59)
+
+---
+
+### 42. **Tentang Menutup Aurat**
+
+﴿ قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَـٰرِهِمْ وَيَحْفَظُوا۟ فُرُوجَهُمْ ﴾
+*“Katakanlah kepada orang-orang beriman agar menundukkan pandangan mereka dan menjaga kemaluannya.”* (QS. An-Nur: 30)
+
+---
+
+### 43. **Tentang Menjaga Waktu Shalat**
+
+« أَحَبُّ الأَعْمَالِ إِلَى اللَّهِ الصَّلاَةُ عَلَى وَقْتِهَا »
+*“Amal yang paling dicintai Allah adalah shalat tepat pada waktunya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 44. **Tentang Menolong Orang Lemah**
+
+« هَلْ تُنْصَرُونَ وَتُرْزَقُونَ إِلَّا بِضُعَفَائِكُمْ »
+*“Kalian diberi rezeki dan pertolongan hanya karena orang-orang lemah di antara kalian.”* (HR. Bukhari)
+
+---
+
+### 45. **Tentang Larangan Putus Asa**
+
+﴿ لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ ﴾
+*“Janganlah kamu berputus asa dari rahmat Allah.”* (QS. Az-Zumar: 53)
+
+---
+
+### 46. **Tentang Keutamaan Senyum**
+
+« تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ لَكَ صَدَقَةٌ »
+*“Senyummu di hadapan saudaramu adalah sedekah bagimu.”* (HR. Tirmidzi)
+
+---
+
+### 47. **Tentang Iman dan Amal Shalih**
+
+﴿ إِلَّا ٱلَّذِينَ ءَامَنُوا۟ وَعَمِلُوا۟ ٱلصَّـٰلِحَـٰتِ ﴾
+*“Kecuali orang-orang yang beriman dan beramal saleh.”* (QS. Al-‘Ashr: 3)
+
+---
+
+### 48. **Tentang Menghindari Dusta**
+
+« إِيَّاكُمْ وَالْكَذِبَ فَإِنَّ الْكَذِبَ يَهْدِي إِلَى الْفُجُورِ »
+*“Jauhilah dusta, karena dusta menjerumuskan kepada kefajiran.”* (HR. Bukhari & Muslim)
+
+---
+
+### 49. **Tentang Berlomba dalam Kebaikan**
+
+﴿ فَاسْتَبِقُوا۟ ٱلْخَيْرَٰتِ ﴾
+*“Berlomba-lombalah dalam kebaikan.”* (QS. Al-Baqarah: 148)
+
+---
+
+### 50. **Tentang Menahan Amarah**
+
+« لَيْسَ الشَّدِيدُ بِالصُّرَعَةِ، إِنَّمَا الشَّدِيدُ الَّذِي يَمْلِكُ نَفْسَهُ عِنْدَ الْغَضَبِ »
+*“Orang kuat bukanlah yang menang dalam gulat, tapi orang yang mampu mengendalikan diri ketika marah.”* (HR. Bukhari & Muslim)
+
+---
+
+### 51. **Tentang Allah Maha Pengampun**
+
+﴿ إِنَّ ٱللَّهَ غَفُورٌۭ رَّحِيمٌ ﴾
+*“Sesungguhnya Allah Maha Pengampun lagi Maha Penyayang.”* (QS. Al-Baqarah: 173)
+
+---
+
+### 52. **Tentang Berdoa di Malam Hari**
+
+« يَنْزِلُ رَبُّنَا كُلَّ لَيْلَةٍ إِلَى السَّمَاءِ الدُّنْيَا حِينَ يَبْقَى ثُلُثُ اللَّيْلِ »
+*“Tuhan kita turun ke langit dunia setiap malam ketika tersisa sepertiga malam terakhir.”* (HR. Bukhari & Muslim)
+
+---
+
+### 53. **Tentang Kesombongan**
+
+« لَا يَدْخُلُ الْجَنَّةَ مَنْ كَانَ فِي قَلْبِهِ مِثْقَالُ ذَرَّةٍ مِنْ كِبْرٍ »
+*“Tidak akan masuk surga orang yang di dalam hatinya terdapat seberat biji debu dari kesombongan.”* (HR. Muslim)
+
+---
+
+### 54. **Tentang Menepati Timbangan**
+
+﴿ وَأَوْفُوا۟ ٱلْكَيْلَ وَٱلْمِيزَانَ بِٱلْقِسْطِ ﴾
+*“Sempurnakanlah takaran dan timbangan dengan adil.”* (QS. Al-An’am: 152)
+
+---
+
+### 55. **Tentang Keutamaan Menjaga Lisan**
+
+« مَنْ يَضْمَنْ لِي مَا بَيْنَ لَحْيَيْهِ وَمَا بَيْنَ رِجْلَيْهِ أَضْمَنْ لَهُ الْجَنَّةَ »
+*“Barangsiapa menjamin untukku apa yang ada di antara dua rahangnya (lisan) dan dua kakinya, maka aku jamin surga untuknya.”* (HR. Bukhari)
+
+---
+
+### 56. **Tentang Shalat Malam**
+
+﴿ وَمِنَ ٱلَّيْلِ فَتَهَجَّدْ بِهِۦ نَافِلَةًۭ لَّكَ ﴾
+*“Dan pada sebagian malam, lakukanlah shalat tahajjud sebagai ibadah tambahan bagimu.”* (QS. Al-Isra: 79)
+
+---
+
+### 57. **Tentang Kebaikan kepada Tetangga**
+
+« مَا زَالَ جِبْرِيلُ يُوصِينِي بِالْجَارِ حَتَّى ظَنَنْتُ أَنَّهُ سَيُوَرِّثُهُ »
+*“Jibril senantiasa berpesan kepadaku tentang tetangga, sampai-sampai aku mengira ia akan diberi hak waris.”* (HR. Bukhari & Muslim)
+
+---
+
+### 58. **Tentang Menjauhi Hasad**
+
+« لَا تَحَاسَدُوا »
+*“Janganlah kalian saling hasad (iri dengki).”* (HR. Muslim)
+
+---
+
+### 59. **Tentang Menutup Aib**
+
+« مَنْ سَتَرَ مُسْلِمًا سَتَرَهُ اللَّهُ يَوْمَ الْقِيَامَةِ »
+*“Barangsiapa menutupi aib seorang muslim, Allah akan menutup aibnya pada hari kiamat.”* (HR. Bukhari & Muslim)
+
+---
+
+### 60. **Tentang Syafaat Nabi**
+
+« أَنَا أَوَّلُ مَنْ يَشْفَعُ فِي الْجَنَّةِ »
+*“Aku adalah orang pertama yang memberi syafaat di surga.”* (HR. Muslim)
+
+---
+
+---
+
+## 📖 Dalil 61–80
+
+### 61. **Tentang Surga bagi Orang Beriman**
+
+﴿ وَبَشِّرِ ٱلَّذِينَ ءَامَنُوا۟ وَعَمِلُوا۟ ٱلصَّـٰلِحَـٰتِ أَنَّ لَهُمْ جَنَّـٰتٍ تَجْرِى مِن تَحْتِهَا ٱلْأَنْهَـٰرُ ﴾
+*“Sampaikanlah kabar gembira kepada orang beriman dan beramal saleh, bahwa bagi mereka surga yang mengalir di bawahnya sungai-sungai.”* (QS. Al-Baqarah: 25)
+
+---
+
+### 62. **Tentang Neraka bagi Orang Kafir**
+
+﴿ وَٱلَّذِينَ كَفَرُوا۟ وَكَذَّبُوا۟ بِـَٔايَـٰتِنَآ أُو۟لَـٰٓئِكَ أَصْحَـٰبُ ٱلنَّارِ هُمْ فِيهَا خَـٰلِدُونَ ﴾
+*“Dan orang-orang yang kafir dan mendustakan ayat-ayat Kami, mereka itu penghuni neraka; mereka kekal di dalamnya.”* (QS. Al-Baqarah: 39)
+
+---
+
+### 63. **Tentang Menuntut Ilmu**
+
+« مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ طَرِيقًا إِلَى الْجَنَّةِ »
+*“Barangsiapa menempuh jalan untuk mencari ilmu, Allah mudahkan jalannya menuju surga.”* (HR. Muslim)
+
+---
+
+### 64. **Tentang Mengingat Kematian**
+
+« أَكْثِرُوا ذِكْرَ هَادِمِ اللَّذَّاتِ »
+*“Perbanyaklah mengingat pemutus segala kenikmatan (kematian).”* (HR. Tirmidzi)
+
+---
+
+### 65. **Tentang Keadilan**
+
+﴿ إِنَّ ٱللَّهَ يُحِبُّ ٱلْمُقْسِطِينَ ﴾
+*“Sesungguhnya Allah mencintai orang-orang yang berlaku adil.”* (QS. Al-Mumtahanah: 8)
+
+---
+
+### 66. **Tentang Keutamaan Dzikir**
+
+« سَبْقَ الْمُفَرِّدُونَ … قَالُوا: مَا الْمُفَرِّدُونَ؟ قَالَ: الذَّاكِرُونَ اللَّهَ كَثِيرًا وَالذَّاكِرَاتُ »
+*“Telah mendahului orang-orang yang menyendiri (dalam dzikir)… yaitu mereka yang banyak berdzikir kepada Allah, laki-laki maupun perempuan.”* (HR. Muslim)
+
+---
+
+### 67. **Tentang Sifat Malu**
+
+« الْحَيَاءُ شُعْبَةٌ مِنَ الإِيمَانِ »
+*“Malu itu bagian dari iman.”* (HR. Bukhari & Muslim)
+
+---
+
+### 68. **Tentang Shalat Sebagai Penolong**
+
+﴿ وَٱسْتَعِينُوا۟ بِٱلصَّبْرِ وَٱلصَّلَوٰةِ ﴾
+*“Jadikanlah sabar dan shalat sebagai penolongmu.”* (QS. Al-Baqarah: 45)
+
+---
+
+### 69. **Tentang Berbuat Ihsan**
+
+﴿ إِنَّ ٱللَّهَ يَأْمُرُ بِٱلْعَدْلِ وَٱلْإِحْسَـٰنِ ﴾
+*“Sesungguhnya Allah menyuruh (kamu berlaku) adil dan berbuat ihsan.”* (QS. An-Nahl: 90)
+
+---
+
+### 70. **Tentang Jihad**
+
+﴿ وَجَـٰهِدُوا۟ فِى ٱللَّهِ حَقَّ جِهَادِهِۦ ﴾
+*“Dan berjihadlah kamu di jalan Allah dengan jihad yang sebenar-benarnya.”* (QS. Al-Hajj: 78)
+
+---
+
+### 71. **Tentang Sedekah yang Ikhlas**
+
+« سَبْعَةٌ يُظِلُّهُمُ اللَّهُ … رَجُلٌ تَصَدَّقَ بِصَدَقَةٍ فَأَخْفَاهَا »
+*“Tujuh golongan yang Allah naungi… salah satunya adalah seseorang yang bersedekah lalu menyembunyikannya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 72. **Tentang Larangan Sombong**
+
+﴿ وَلَا تَمْشِ فِى ٱلْأَرْضِ مَرَحًۭا ﴾
+*“Janganlah kamu berjalan di bumi dengan sombong.”* (QS. Al-Isra: 37)
+
+---
+
+### 73. **Tentang Kasih Sayang**
+
+« الرَّاحِمُونَ يَرْحَمُهُمُ الرَّحْمَنُ »
+*“Orang-orang yang penyayang akan disayangi oleh Ar-Rahman (Allah).”* (HR. Tirmidzi)
+
+---
+
+### 74. **Tentang Doa Orang Tua**
+
+« ثَلَاثُ دَعَوَاتٍ مُسْتَجَابَاتٌ … دَعْوَةُ الْوَالِدِ لِوَلَدِهِ »
+*“Tiga doa yang mustajab… doa orang tua untuk anaknya.”* (HR. Tirmidzi)
+
+---
+
+### 75. **Tentang Qana’ah (merasa cukup)**
+
+« ارْضَ بِمَا قَسَمَ اللَّهُ لَكَ تَكُنْ أَغْنَى النَّاسِ »
+*“Ridhalah dengan apa yang Allah bagikan untukmu, maka engkau menjadi manusia terkaya.”* (HR. Tirmidzi)
+
+---
+
+### 76. **Tentang Menahan Diri dari Maksiat**
+
+﴿ وَأَمَّا مَنْ خَافَ مَقَامَ رَبِّهِۦ وَنَهَى ٱلنَّفْسَ عَنِ ٱلْهَوَىٰ \* فَإِنَّ ٱلْجَنَّةَ هِىَ ٱلْمَأْوَىٰ ﴾
+*“Adapun orang yang takut kepada kebesaran Tuhannya dan menahan diri dari keinginan hawa nafsunya, maka surgalah tempat tinggalnya.”* (QS. An-Nazi’at: 40-41)
+
+---
+
+### 77. **Tentang Shalat Sebagai Cahaya**
+
+« الصَّلاَةُ نُورٌ »
+*“Shalat itu cahaya.”* (HR. Muslim)
+
+---
+
+### 78. **Tentang Berdoa untuk Saudara**
+
+« دَعْوَةُ الْمَرْءِ الْمُسْلِمِ لأَخِيهِ بِظَهْرِ الْغَيْبِ مُسْتَجَابَةٌ »
+*“Doa seorang muslim untuk saudaranya tanpa sepengetahuannya adalah mustajab.”* (HR. Muslim)
+
+---
+
+### 79. **Tentang Orang yang Paling Baik**
+
+« خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ »
+*“Sebaik-baik manusia adalah yang paling bermanfaat bagi manusia lainnya.”* (HR. Ahmad)
+
+---
+
+### 80. **Tentang Dunia Sebagai Ujian**
+
+﴿ وَنَبْلُوكُم بِٱلشَّرِّ وَٱلْخَيْرِ فِتْنَةً ﴾
+*“Kami menguji kalian dengan keburukan dan kebaikan sebagai cobaan.”* (QS. Al-Anbiya: 35)
+
+---
+
+Siap ✨ ini saya lanjutkan **dalil terakhir 81–100** biar genap.
+
+---
+
+## 📖 Dalil 81–100
+
+### 81. **Tentang Larangan Menyia-nyiakan Waktu**
+
+« نِعْمَتَانِ مَغْبُونٌ فِيهِمَا كَثِيرٌ مِنَ النَّاسِ: الصِّحَّةُ وَالْفَرَاغُ »
+*“Ada dua nikmat yang banyak manusia tertipu karenanya: kesehatan dan waktu luang.”* (HR. Bukhari)
+
+---
+
+### 82. **Tentang Hukum Membalas Kebaikan dengan Lebih Baik**
+
+﴿ هَلْ جَزَآءُ ٱلْإِحْسَـٰنِ إِلَّا ٱلْإِحْسَـٰنُ ﴾
+*“Tidak ada balasan kebaikan kecuali kebaikan pula.”* (QS. Ar-Rahman: 60)
+
+---
+
+### 83. **Tentang Tanda Orang Munafik**
+
+« آيَةُ الْمُنَافِقِ ثَلاَثٌ: إِذَا حَدَّثَ كَذَبَ، وَإِذَا وَعَدَ أَخْلَفَ، وَإِذَا اؤْتُمِنَ خَانَ »
+*“Tanda orang munafik ada tiga: bila berkata ia berdusta, bila berjanji ia mengingkari, bila dipercaya ia berkhianat.”* (HR. Bukhari & Muslim)
+
+---
+
+### 84. **Tentang Larangan Boros**
+
+﴿ إِنَّ ٱلْمُبَذِّرِينَ كَانُوٓا۟ إِخْوَٰنَ ٱلشَّيَـٰطِينِ ﴾
+*“Sesungguhnya orang-orang yang boros itu adalah saudara setan.”* (QS. Al-Isra: 27)
+
+---
+
+### 85. **Tentang Orang yang Dicintai Allah**
+
+« أَحَبُّ الأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا وَإِنْ قَلَّ »
+*“Amal yang paling dicintai Allah adalah yang terus-menerus walaupun sedikit.”* (HR. Bukhari & Muslim)
+
+---
+
+### 86. **Tentang Keutamaan Belajar Ilmu Agama**
+
+« مَنْ يُرِدِ اللَّهُ بِهِ خَيْرًا يُفَقِّهْهُ فِي الدِّينِ »
+*“Barangsiapa yang Allah kehendaki kebaikan baginya, maka Allah jadikan dia faham dalam agama.”* (HR. Bukhari & Muslim)
+
+---
+
+### 87. **Tentang Larangan Menipu**
+
+« مَنْ غَشَّ فَلَيْسَ مِنَّا »
+*“Barangsiapa menipu, maka ia bukan dari golongan kami.”* (HR. Muslim)
+
+---
+
+### 88. **Tentang Akhlak Mulia**
+
+« إِنَّمَا بُعِثْتُ لِأُتَمِّمَ صَالِحَ الأَخْلاَقِ »
+*“Sesungguhnya aku diutus hanya untuk menyempurnakan akhlak yang mulia.”* (HR. Ahmad)
+
+---
+
+### 89. **Tentang Takut pada Allah**
+
+﴿ فَلَا تَخْشَوُا ٱلنَّاسَ وَٱخْشَوْنِ ﴾
+*“Janganlah kalian takut kepada manusia, tetapi takutlah kepada-Ku.”* (QS. Al-Maidah: 44)
+
+---
+
+### 90. **Tentang Harta dan Anak Sebagai Ujian**
+
+﴿ إِنَّمَآ أَمْوَٰلُكُمْ وَأَوْلَـٰدُكُمْ فِتْنَةٌ ﴾
+*“Sesungguhnya hartamu dan anak-anakmu hanyalah cobaan.”* (QS. At-Taghabun: 15)
+
+---
+
+### 91. **Tentang Keutamaan Ikhlas**
+
+« إِنَّ اللَّهَ لَا يَقْبَلُ مِنَ الْعَمَلِ إِلَّا مَا كَانَ لَهُ خَالِصًا وَابْتُغِيَ بِهِ وَجْهُهُ »
+*“Sesungguhnya Allah tidak menerima amal kecuali yang ikhlas dan hanya mengharap ridha-Nya.”* (HR. Nasa’i)
+
+---
+
+### 92. **Tentang Larangan Dengki**
+
+﴿ أَمْ يَحْسُدُونَ ٱلنَّاسَ عَلَىٰ مَآ ءَاتَىٰهُمُ ٱللَّهُ ﴾
+*“Apakah mereka dengki kepada manusia atas karunia yang telah Allah berikan?”* (QS. An-Nisa: 54)
+
+---
+
+### 93. **Tentang Tawakal**
+
+﴿ وَمَن يَتَوَكَّلْ عَلَى ٱللَّهِ فَهُوَ حَسْبُهُ ﴾
+*“Barangsiapa bertawakal kepada Allah, maka Allah akan mencukupkannya.”* (QS. At-Talaq: 3)
+
+---
+
+### 94. **Tentang Jujur Membawa Kebaikan**
+
+« إِنَّ الصِّدْقَ يَهْدِي إِلَى الْبِرِّ، وَإِنَّ الْبِرَّ يَهْدِي إِلَى الْجَنَّةِ »
+*“Sesungguhnya kejujuran membawa kepada kebaikan, dan kebaikan membawa ke surga.”* (HR. Bukhari & Muslim)
+
+---
+
+### 95. **Tentang Keutamaan Shalat Berjamaah**
+
+« صَلاَةُ الْجَمَاعَةِ تَفْضُلُ صَلاَةَ الْفَذِّ بِسَبْعٍ وَعِشْرِينَ دَرَجَةً »
+*“Shalat berjamaah lebih utama daripada shalat sendirian dengan dua puluh tujuh derajat.”* (HR. Bukhari & Muslim)
+
+---
+
+### 96. **Tentang Berpegang pada Agama Islam**
+
+﴿ وَمَن يَبْتَغِ غَيْرَ ٱلْإِسْلَـٰمِ دِينًۭا فَلَن يُقْبَلَ مِنْهُ ﴾
+*“Barangsiapa mencari agama selain Islam, maka tidak akan diterima darinya.”* (QS. Ali Imran: 85)
+
+---
+
+### 97. **Tentang Larangan Membenci Sesama Muslim**
+
+« لَا تَبَاغَضُوا، وَلَا تَحَاسَدُوا، وَلَا تَدَابَرُوا، وَكُونُوا عِبَادَ اللَّهِ إِخْوَانًا »
+*“Jangan saling membenci, saling dengki, dan saling membelakangi; jadilah hamba Allah yang bersaudara.”* (HR. Muslim)
+
+---
+
+### 98. **Tentang Sabar sebagai Cahaya**
+
+« وَالصَّبْرُ ضِيَاءٌ »
+*“Sabar itu cahaya.”* (HR. Muslim)
+
+---
+
+### 99. **Tentang Hari Akhir**
+
+﴿ وَٱتَّقُوا۟ يَوْمًۭا تُرْجَعُونَ فِيهِ إِلَى ٱللَّهِ ﴾
+*“Dan takutlah kalian pada suatu hari ketika kalian akan dikembalikan kepada Allah.”* (QS. Al-Baqarah: 281)
+
+---
+
+### 100. **Tentang Kunci Surga**
+
+« مَنْ قَالَ لَا إِلَهَ إِلَّا اللَّهُ دَخَلَ الْجَنَّةَ »
+*“Barangsiapa mengucapkan *La ilaha illallah*, maka ia akan masuk surga.”* (HR. Bukhari & Muslim)
+
+---
+
+
+---
+
+## 📖 Dalil 101–120
+
+### 101. **Tentang Sifat Allah Maha Mengetahui**
+
+﴿ إِنَّ ٱللَّهَ بِكُلِّ شَىْءٍ عَلِيمٌ ﴾
+*“Sesungguhnya Allah Maha Mengetahui segala sesuatu.”* (QS. Al-Baqarah: 282)
+
+---
+
+### 102. **Tentang Shalat sebagai Penolong**
+
+﴿ وَاسْتَعِينُوا۟ بِٱلصَّبْرِ وَٱلصَّلَوٰةِ ﴾
+*“Jadikanlah sabar dan shalat sebagai penolongmu.”* (QS. Al-Baqarah: 45)
+
+---
+
+### 103. **Tentang Keutamaan Menuntut Ilmu**
+
+« مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا، سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ »
+*“Barangsiapa menempuh jalan untuk mencari ilmu, Allah mudahkan baginya jalan menuju surga.”* (HR. Muslim)
+
+---
+
+### 104. **Tentang Larangan Bunuh Diri**
+
+﴿ وَلَا تَقْتُلُوٓا۟ أَنفُسَكُمْ ۚ إِنَّ ٱللَّهَ كَانَ بِكُمْ رَحِيمًۭا ﴾
+*“Janganlah kalian membunuh diri kalian; sesungguhnya Allah Maha Penyayang kepadamu.”* (QS. An-Nisa: 29)
+
+---
+
+### 105. **Tentang Kedudukan Orang Berilmu**
+
+﴿ يَرْفَعِ ٱللَّهُ ٱلَّذِينَ ءَامَنُوا۟ مِنكُمْ وَٱلَّذِينَ أُوتُوا۟ ٱلْعِلْمَ دَرَجَـٰتٍۢ ﴾
+*“Allah meninggikan derajat orang-orang yang beriman dan berilmu di antara kamu beberapa derajat.”* (QS. Al-Mujadilah: 11)
+
+---
+
+### 106. **Tentang Shalat sebagai Tiang Agama**
+
+« رَأْسُ الأَمْرِ الإِسْلاَمُ، وَعَمُودُهُ الصَّلاَةُ »
+*“Pokok urusan (agama) adalah Islam, dan tiangnya adalah shalat.”* (HR. Tirmidzi)
+
+---
+
+### 107. **Tentang Allah Tidak Membebani di Luar Kemampuan**
+
+﴿ لَا يُكَلِّفُ ٱللَّهُ نَفْسًا إِلَّا وُسْعَهَا ﴾
+*“Allah tidak membebani seseorang melainkan sesuai dengan kesanggupannya.”* (QS. Al-Baqarah: 286)
+
+---
+
+### 108. **Tentang Keutamaan Sedekah Diam-diam**
+
+« وَرَجُلٌ تَصَدَّقَ بِصَدَقَةٍ فَأَخْفَاهَا، حَتَّى لَا تَعْلَمَ شِمَالُهُ مَا تُنْفِقُ يَمِينُهُ »
+*“Seorang yang bersedekah lalu menyembunyikannya, hingga tangan kirinya tidak tahu apa yang disedekahkan tangan kanannya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 109. **Tentang Keutamaan Qiyamul Lail**
+
+« أَفْضَلُ الصَّلاَةِ بَعْدَ الْمَكْتُوبَةِ صَلاَةُ اللَّيْلِ »
+*“Shalat yang paling utama setelah shalat wajib adalah shalat malam.”* (HR. Muslim)
+
+---
+
+### 110. **Tentang Amal Tergantung Niat**
+
+« إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ »
+*“Sesungguhnya amal itu tergantung niat.”* (HR. Bukhari & Muslim)
+
+---
+
+### 111. **Tentang Syukur Membawa Tambahan Nikmat**
+
+﴿ لَئِن شَكَرْتُمْ لَأَزِيدَنَّكُمْ ﴾
+*“Jika kamu bersyukur, pasti Aku tambah (nikmat) kepadamu.”* (QS. Ibrahim: 7)
+
+---
+
+### 112. **Tentang Berbuat Baik kepada Tetangga**
+
+« مَا زَالَ جِبْرِيلُ يُوصِينِي بِالْجَارِ حَتَّى ظَنَنْتُ أَنَّهُ سَيُوَرِّثُهُ »
+*“Jibril terus-menerus berwasiat kepadaku tentang tetangga, sampai aku mengira tetangga akan mendapat warisan.”* (HR. Bukhari & Muslim)
+
+---
+
+### 113. **Tentang Dunia Hanya Sementara**
+
+﴿ وَمَا ٱلْحَيَوٰةُ ٱلدُّنْيَآ إِلَّا مَتَـٰعُ ٱلْغُرُورِ ﴾
+*“Kehidupan dunia hanyalah kesenangan yang menipu.”* (QS. Ali Imran: 185)
+
+---
+
+### 114. **Tentang Wajibnya Menutup Aurat**
+
+﴿ يَـٰبَنِىٓ ءَادَمَ خُذُوا۟ زِينَتَكُمْ عِندَ كُلِّ مَسْجِدٍۢ ﴾
+*“Wahai anak Adam, pakailah pakaianmu yang indah di setiap (memasuki) masjid.”* (QS. Al-A’raf: 31)
+
+---
+
+### 115. **Tentang Allah Maha Pengampun**
+
+﴿ إِنَّ ٱللَّهَ يَغْفِرُ ٱلذُّنُوبَ جَمِيعًۭا ﴾
+*“Sesungguhnya Allah mengampuni dosa-dosa semuanya.”* (QS. Az-Zumar: 53)
+
+---
+
+### 116. **Tentang Saling Memberi Salam**
+
+« أَفْشُوا السَّلَامَ بَيْنَكُمْ »
+*“Sebarkanlah salam di antara kalian.”* (HR. Muslim)
+
+---
+
+### 117. **Tentang Menepati Janji**
+
+﴿ وَأَوْفُوا۟ بِٱلْعَهْدِ ۖ إِنَّ ٱلْعَهْدَ كَانَ مَسْـُٔولًۭا ﴾
+*“Tunaikanlah janji, sesungguhnya janji itu pasti dimintai pertanggungjawaban.”* (QS. Al-Isra: 34)
+
+---
+
+### 118. **Tentang Menolong Sesama Muslim**
+
+« وَاللَّهُ فِي عَوْنِ الْعَبْدِ، مَا كَانَ الْعَبْدُ فِي عَوْنِ أَخِيهِ »
+*“Allah akan menolong seorang hamba selama ia menolong saudaranya.”* (HR. Muslim)
+
+---
+
+### 119. **Tentang Kematian Tidak Bisa Dihindari**
+
+﴿ كُلُّ نَفْسٍۢ ذَآئِقَةُ ٱلْمَوْتِ ﴾
+*“Setiap yang bernyawa pasti akan merasakan mati.”* (QS. Ali Imran: 185)
+
+---
+
+### 120. **Tentang Kebaikan kepada Orang Tua**
+
+« رِضَا اللَّهِ فِي رِضَا الْوَالِدِ، وَسَخَطُ اللَّهِ فِي سَخَطِ الْوَالِدِ »
+*“Keridaan Allah ada pada keridaan orang tua, dan murka Allah ada pada murka orang tua.”* (HR. Tirmidzi)
+
+---
+
+
+---
+
+## 📖 Dalil 121–140
+
+### 121. **Tentang Menjaga Lisan**
+
+« مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الْآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ »
+*“Barangsiapa beriman kepada Allah dan hari akhir, hendaklah berkata baik atau diam.”* (HR. Bukhari & Muslim)
+
+---
+
+### 122. **Tentang Persaudaraan Sesama Mukmin**
+
+﴿ إِنَّمَا ٱلْمُؤْمِنُونَ إِخْوَةٌ ﴾
+*“Sesungguhnya orang-orang beriman itu bersaudara.”* (QS. Al-Hujurat: 10)
+
+---
+
+### 123. **Tentang Menyegerakan Shalat**
+
+« أَحَبُّ الْأَعْمَالِ إِلَى اللَّهِ الصَّلاَةُ عَلَى وَقْتِهَا »
+*“Amal yang paling dicintai Allah adalah shalat tepat pada waktunya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 124. **Tentang Larangan Riba**
+
+﴿ وَأَحَلَّ ٱللَّهُ ٱلْبَيْعَ وَحَرَّمَ ٱلرِّبَوٰا۟ ﴾
+*“Allah menghalalkan jual beli dan mengharamkan riba.”* (QS. Al-Baqarah: 275)
+
+---
+
+### 125. **Tentang Orang Paling Baik**
+
+« خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ »
+*“Sebaik-baik kalian adalah yang belajar Al-Qur’an dan mengajarkannya.”* (HR. Bukhari)
+
+---
+
+### 126. **Tentang Keutamaan Istighfar**
+
+﴿ فَقُلْتُ ٱسْتَغْفِرُوا۟ رَبَّكُمْ إِنَّهُۥ كَانَ غَفَّارًۭا ﴾
+*“Maka aku katakan kepada mereka: Mohonlah ampun kepada Tuhanmu, sesungguhnya Dia Maha Pengampun.”* (QS. Nuh: 10)
+
+---
+
+### 127. **Tentang Amanah**
+
+﴿ إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤدُّوا۟ ٱلْأَمَـٰنَـٰتِ إِلَىٰٓ أَهْلِهَا ﴾
+*“Sesungguhnya Allah menyuruh kamu menyampaikan amanat kepada yang berhak menerimanya.”* (QS. An-Nisa: 58)
+
+---
+
+### 128. **Tentang Sifat Munafik**
+
+« آيَةُ الْمُنَافِقِ ثَلاَثٌ: إِذَا حَدَّثَ كَذَبَ، وَإِذَا وَعَدَ أَخْلَفَ، وَإِذَا اؤْتُمِنَ خَانَ »
+*“Tanda orang munafik ada tiga: jika berbicara berdusta, jika berjanji ingkar, jika dipercaya berkhianat.”* (HR. Bukhari & Muslim)
+
+---
+
+### 129. **Tentang Balasan Orang Sabar**
+
+﴿ إِنَّمَا يُوَفَّى ٱلصَّـٰبِرُونَ أَجْرَهُم بِغَيْرِ حِسَابٍ ﴾
+*“Sesungguhnya orang-orang yang sabar akan diberi pahala tanpa batas.”* (QS. Az-Zumar: 10)
+
+---
+
+### 130. **Tentang Keadilan**
+
+﴿ إِنَّ ٱللَّهَ يَأْمُرُ بِٱلْعَدْلِ وَٱلْإِحْسَـٰنِ ﴾
+*“Sesungguhnya Allah menyuruh berlaku adil dan berbuat kebajikan.”* (QS. An-Nahl: 90)
+
+---
+
+### 131. **Tentang Kebersihan**
+
+« الطُّهُورُ شَطْرُ الْإِيمَانِ »
+*“Kebersihan itu separuh dari iman.”* (HR. Muslim)
+
+---
+
+### 132. **Tentang Berlomba dalam Kebaikan**
+
+﴿ فَاسْتَبِقُوا۟ ٱلْخَيْرَٰتِ ﴾
+*“Maka berlomba-lombalah dalam kebaikan.”* (QS. Al-Baqarah: 148)
+
+---
+
+### 133. **Tentang Cinta Dunia**
+
+« حُبُّ الدُّنْيَا رَأْسُ كُلِّ خَطِيئَةٍ »
+*“Cinta dunia adalah pangkal segala kesalahan.”* (HR. Baihaqi)
+
+---
+
+### 134. **Tentang Berbuat Baik Sekecil Apa Pun**
+
+﴿ فَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ خَيْرًۭا يَرَهُ ﴾
+*“Barangsiapa berbuat kebaikan seberat dzarrah, niscaya dia akan melihat (balasannya).”* (QS. Az-Zalzalah: 7)
+
+---
+
+### 135. **Tentang Membalas Kejahatan dengan Kebaikan**
+
+﴿ ٱدْفَعْ بِٱلَّتِى هِىَ أَحْسَنُ ﴾
+*“Tolaklah (balasan kejahatan) dengan cara yang lebih baik.”* (QS. Fussilat: 34)
+
+---
+
+### 136. **Tentang Doa Mustajab Orang Terzalimi**
+
+« اتَّقِ دَعْوَةَ الْمَظْلُومِ، فَإِنَّهَا لَيْسَ بَيْنَهَا وَبَيْنَ اللَّهِ حِجَابٌ »
+*“Takutlah kepada doa orang yang terzalimi, karena tidak ada penghalang antara doanya dengan Allah.”* (HR. Bukhari & Muslim)
+
+---
+
+### 137. **Tentang Keutamaan Membaca Al-Qur’an**
+
+« اقْرَءُوا الْقُرْآنَ فَإِنَّهُ يَأْتِي يَوْمَ الْقِيَامَةِ شَفِيعًا لأَصْحَابِهِ »
+*“Bacalah Al-Qur’an, karena ia akan datang pada hari kiamat memberi syafaat bagi pembacanya.”* (HR. Muslim)
+
+---
+
+### 138. **Tentang Menutup Aib Orang Lain**
+
+« مَنْ سَتَرَ مُسْلِمًا سَتَرَهُ اللَّهُ فِي الدُّنْيَا وَالآخِرَةِ »
+*“Barangsiapa menutup aib seorang muslim, Allah akan menutup aibnya di dunia dan akhirat.”* (HR. Muslim)
+
+---
+
+### 139. **Tentang Tawakal**
+
+﴿ وَمَن يَتَوَكَّلْ عَلَى ٱللَّهِ فَهُوَ حَسْبُهُ ﴾
+*“Barangsiapa bertawakal kepada Allah, maka Allah akan mencukupinya.”* (QS. At-Talaq: 3)
+
+---
+
+### 140. **Tentang Silaturahmi Memanjangkan Umur**
+
+« مَنْ أَحَبَّ أَنْ يُبْسَطَ لَهُ فِي رِزْقِهِ، وَيُنْسَأَ لَهُ فِي أَثَرِهِ، فَلْيَصِلْ رَحِمَهُ »
+*“Barangsiapa ingin dilapangkan rezekinya dan dipanjangkan umurnya, maka hendaklah ia menyambung silaturahmi.”* (HR. Bukhari & Muslim)
+
+---
+
+
+---
+
+## 📖 Dalil 141–160
+
+### 141. **Tentang Menepati Janji**
+
+﴿ وَأَوْفُوا۟ بِٱلْعَهْدِ ۖ إِنَّ ٱلْعَهْدَ كَانَ مَسْـُٔولًۭا ﴾
+*“Tepatilah janji, karena janji itu pasti diminta pertanggungjawabannya.”* (QS. Al-Isra: 34)
+
+---
+
+### 142. **Tentang Kesombongan**
+
+« لَا يَدْخُلُ الْجَنَّةَ مَنْ كَانَ فِي قَلْبِهِ مِثْقَالُ ذَرَّةٍ مِنْ كِبْرٍ »
+*“Tidak akan masuk surga orang yang di dalam hatinya ada seberat dzarrah kesombongan.”* (HR. Muslim)
+
+---
+
+### 143. **Tentang Keutamaan Akhlak Baik**
+
+« أَكْمَلُ الْمُؤْمِنِينَ إِيمَانًا أَحْسَنُهُمْ خُلُقًا »
+*“Mukmin yang paling sempurna imannya adalah yang paling baik akhlaknya.”* (HR. Tirmidzi)
+
+---
+
+### 144. **Tentang Menjauhi Ghibah**
+
+﴿ وَلَا يَغْتَب بَّعْضُكُم بَعْضًا ﴾
+*“Janganlah sebagian kalian menggunjing sebagian yang lain.”* (QS. Al-Hujurat: 12)
+
+---
+
+### 145. **Tentang Bersyukur**
+
+﴿ لَئِن شَكَرْتُمْ لَأَزِيدَنَّكُمْ ﴾
+*“Jika kamu bersyukur, niscaya Aku akan menambah (nikmat) kepadamu.”* (QS. Ibrahim: 7)
+
+---
+
+### 146. **Tentang Orang yang Tidak Bersyukur**
+
+« مَنْ لَا يَشْكُرُ النَّاسَ لَا يَشْكُرُ اللَّهَ »
+*“Barangsiapa tidak bersyukur kepada manusia, maka ia tidak bersyukur kepada Allah.”* (HR. Ahmad)
+
+---
+
+### 147. **Tentang Menolong Sesama**
+
+« وَاللَّهُ فِي عَوْنِ الْعَبْدِ مَا كَانَ الْعَبْدُ فِي عَوْنِ أَخِيهِ »
+*“Allah akan menolong seorang hamba selama hamba itu menolong saudaranya.”* (HR. Muslim)
+
+---
+
+### 148. **Tentang Balasan Orang yang Bersyukur**
+
+﴿ وَسَيَجْزِى ٱللَّهُ ٱلشَّـٰكِرِينَ ﴾
+*“Allah akan memberi balasan kepada orang-orang yang bersyukur.”* (QS. Ali Imran: 144)
+
+---
+
+### 149. **Tentang Larangan Sombong dalam Berjalan**
+
+﴿ وَلَا تَمْشِ فِى ٱلْأَرْضِ مَرَحًا ﴾
+*“Janganlah engkau berjalan di muka bumi dengan sombong.”* (QS. Luqman: 18)
+
+---
+
+### 150. **Tentang Jujur**
+
+« عَلَيْكُمْ بِالصِّدْقِ فَإِنَّ الصِّدْقَ يَهْدِي إِلَى الْبِرِّ »
+*“Hendaklah kalian berlaku jujur, karena kejujuran membawa kepada kebaikan.”* (HR. Bukhari & Muslim)
+
+---
+
+### 151. **Tentang Dusta**
+
+« وَإِيَّاكُمْ وَالْكَذِبَ، فَإِنَّ الْكَذِبَ يَهْدِي إِلَى الْفُجُورِ »
+*“Jauhilah dusta, karena dusta membawa kepada kefajiran.”* (HR. Bukhari & Muslim)
+
+---
+
+### 152. **Tentang Orang yang Paling Dicintai Allah**
+
+« أَحَبُّ النَّاسِ إِلَى اللَّهِ أَنْفَعُهُمْ لِلنَّاسِ »
+*“Manusia yang paling dicintai Allah adalah yang paling bermanfaat bagi manusia.”* (HR. Thabrani)
+
+---
+
+### 153. **Tentang Menutup Aurat**
+
+﴿ يَـٰبَنِىٓ ءَادَمَ قَدْ أَنزَلْنَا عَلَيْكُمْ لِبَاسًۭا يُوَٰرِى سَوْءَٰتِكُمْ ﴾
+*“Wahai anak Adam, sesungguhnya Kami telah menurunkan pakaian untuk menutupi auratmu.”* (QS. Al-A’raf: 26)
+
+---
+
+### 154. **Tentang Mengendalikan Amarah**
+
+« لَيْسَ الشَّدِيدُ بِالصُّرَعَةِ، إِنَّمَا الشَّدِيدُ الَّذِي يَمْلِكُ نَفْسَهُ عِنْدَ الْغَضَبِ »
+*“Orang kuat bukanlah yang pandai bergulat, tetapi orang yang kuat adalah yang mampu menahan diri saat marah.”* (HR. Bukhari & Muslim)
+
+---
+
+### 155. **Tentang Orang yang Rendah Hati**
+
+﴿ وَعِبَادُ ٱلرَّحْمَـٰنِ ٱلَّذِينَ يَمْشُونَ عَلَى ٱلْأَرْضِ هَوْنًۭا ﴾
+*“Hamba-hamba Allah Yang Maha Pengasih itu adalah mereka yang berjalan di bumi dengan rendah hati.”* (QS. Al-Furqan: 63)
+
+---
+
+### 156. **Tentang Menjauhi Dusta dalam Jual Beli**
+
+« الْبَيِّعَانِ بِالْخِيَارِ مَا لَمْ يَتَفَرَّقَا، فَإِنْ صَدَقَا وَبَيَّنَا بُورِكَ لَهُمَا، وَإِنْ كَذَبَا وَكَتَمَا مُحِقَتْ بَرَكَةُ بَيْعِهِمَا »
+*“Dua orang yang berjual beli memiliki hak khiyar selama belum berpisah. Jika keduanya jujur dan jelas, maka diberkahi jual belinya. Jika keduanya berdusta dan menyembunyikan, maka dihapus keberkahannya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 157. **Tentang Mengingat Kematian**
+
+« أَكْثِرُوا ذِكْرَ هَادِمِ اللَّذَّاتِ »
+*“Perbanyaklah mengingat pemutus kenikmatan (kematian).”* (HR. Tirmidzi)
+
+---
+
+### 158. **Tentang Doa Perlindungan dari Api Neraka**
+
+﴿ رَبَّنَا أَصْرِفْ عَنَّا عَذَابَ جَهَنَّمَ ﴾
+*“Ya Rabb kami, jauhkanlah dari kami azab neraka Jahanam.”* (QS. Al-Furqan: 65)
+
+---
+
+### 159. **Tentang Menyebarkan Salam**
+
+« أَفْشُوا السَّلَامَ بَيْنَكُمْ »
+*“Sebarkanlah salam di antara kalian.”* (HR. Muslim)
+
+---
+
+### 160. **Tentang Perintah Menutup Pandangan**
+
+﴿ قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَـٰرِهِمْ ﴾
+*“Katakanlah kepada orang laki-laki yang beriman: Hendaklah mereka menundukkan pandangannya.”* (QS. An-Nur: 30)
+
+
+---
+
+## 📖 Dalil 161–200
+
+### 161. **Tentang Keutamaan Senyum**
+
+« تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ لَكَ صَدَقَةٌ »
+*“Senyummu di hadapan saudaramu adalah sedekah.”* (HR. Tirmidzi)
+
+---
+
+### 162. **Tentang Larangan Dengki**
+
+« لَا تَحَاسَدُوا وَلَا تَبَاغَضُوا »
+*“Janganlah kalian saling hasad (dengki) dan jangan saling membenci.”* (HR. Muslim)
+
+---
+
+### 163. **Tentang Persaudaraan Islam**
+
+﴿ إِنَّمَا ٱلْمُؤْمِنُونَ إِخْوَةٌۭ ﴾
+*“Sesungguhnya orang-orang beriman itu bersaudara.”* (QS. Al-Hujurat: 10)
+
+---
+
+### 164. **Tentang Menolong di Jalan Kebaikan**
+
+﴿ وَتَعَاوَنُوا۟ عَلَى ٱلْبِرِّ وَٱلتَّقْوَىٰ ﴾
+*“Tolong-menolonglah kalian dalam kebaikan dan takwa.”* (QS. Al-Maidah: 2)
+
+---
+
+### 165. **Tentang Menyembunyikan Aib Saudara**
+
+« مَنْ سَتَرَ مُسْلِمًا سَتَرَهُ اللَّهُ فِي الدُّنْيَا وَالْآخِرَةِ »
+*“Barangsiapa menutupi aib seorang muslim, Allah akan menutup aibnya di dunia dan akhirat.”* (HR. Muslim)
+
+---
+
+### 166. **Tentang Menjenguk Orang Sakit**
+
+« مَا مِنْ مُسْلِمٍ يَعُودُ مُسْلِمًا إِلَّا صَلَّى عَلَيْهِ سَبْعُونَ أَلْفَ مَلَكٍ »
+*“Tidaklah seorang muslim menjenguk muslim lain, kecuali 70.000 malaikat mendoakannya.”* (HR. Tirmidzi)
+
+---
+
+### 167. **Tentang Menyambung Silaturahmi**
+
+﴿ وَٱلَّذِينَ يَصِلُونَ مَآ أَمَرَ ٱللَّهُ بِهِۦٓ أَن يُوصَلَ ﴾
+*“Dan orang-orang yang menyambung apa yang Allah perintahkan untuk disambung (silaturahmi).”* (QS. Ar-Ra’d: 21)
+
+---
+
+### 168. **Tentang Putus Silaturahmi**
+
+« لَا يَدْخُلُ الْجَنَّةَ قَاطِعٌ »
+*“Tidak akan masuk surga orang yang memutuskan silaturahmi.”* (HR. Bukhari & Muslim)
+
+---
+
+### 169. **Tentang Sifat Pemaaf**
+
+﴿ فَٱعْفُوا۟ وَٱصْفَحُوٓا۟ ﴾
+*“Maka maafkanlah dan berlapang dadalah kalian.”* (QS. Al-Baqarah: 109)
+
+---
+
+### 170. **Tentang Kelembutan**
+
+« إِنَّ الرِّفْقَ لَا يَكُونُ فِي شَيْءٍ إِلَّا زَانَهُ »
+*“Sesungguhnya kelembutan tidaklah ada pada sesuatu melainkan akan menghiasinya.”* (HR. Muslim)
+
+---
+
+### 171. **Tentang Kesabaran dalam Musibah**
+
+﴿ إِنَّمَا يُوَفَّى ٱلصَّـٰبِرُونَ أَجْرَهُم بِغَيْرِ حِسَابٍۢ ﴾
+*“Sesungguhnya orang-orang yang sabar akan diberi pahala tanpa batas.”* (QS. Az-Zumar: 10)
+
+---
+
+### 172. **Tentang Ziarah Kubur**
+
+« كُنْتُ نَهَيْتُكُمْ عَنْ زِيَارَةِ الْقُبُورِ فَزُورُوهَا »
+*“Dulu aku melarang kalian berziarah kubur, sekarang berziarahlah.”* (HR. Muslim)
+
+---
+
+### 173. **Tentang Fitnah Lebih Besar dari Membunuh**
+
+﴿ وَٱلْفِتْنَةُ أَشَدُّ مِنَ ٱلْقَتْلِ ﴾
+*“Fitnah itu lebih besar (dosanya) daripada membunuh.”* (QS. Al-Baqarah: 191)
+
+---
+
+### 174. **Tentang Menuntut Ilmu**
+
+« مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ »
+*“Barangsiapa menempuh jalan untuk mencari ilmu, Allah mudahkan baginya jalan menuju surga.”* (HR. Muslim)
+
+---
+
+### 175. **Tentang Menyampaikan Ilmu**
+
+« بَلِّغُوا عَنِّي وَلَوْ آيَةً »
+*“Sampaikanlah dariku walau hanya satu ayat.”* (HR. Bukhari)
+
+---
+
+### 176. **Tentang Mencintai Karena Allah**
+
+« أَوثَقُ عُرَى الْإِيمَانِ أَنْ تُحِبَّ فِي اللَّهِ وَتُبْغِضَ فِي اللَّهِ »
+*“Ikatan iman yang paling kuat adalah mencintai karena Allah dan membenci karena Allah.”* (HR. Ahmad)
+
+---
+
+### 177. **Tentang Balasan Kebaikan**
+
+﴿ هَلْ جَزَآءُ ٱلْإِحْسَـٰنِ إِلَّا ٱلْإِحْسَـٰنُ ﴾
+*“Tidak ada balasan kebaikan kecuali kebaikan (pula).”* (QS. Ar-Rahman: 60)
+
+---
+
+### 178. **Tentang Perintah Menepati Timbangan**
+
+﴿ وَأَوْفُوا ٱلْكَيْلَ وَٱلْمِيزَانَ بِٱلْقِسْطِ ﴾
+*“Tunaikanlah takaran dan timbangan dengan adil.”* (QS. Al-An’am: 152)
+
+---
+
+### 179. **Tentang Orang yang Menipu**
+
+« مَنْ غَشَّنَا فَلَيْسَ مِنَّا »
+*“Barangsiapa menipu kami maka dia bukan dari golongan kami.”* (HR. Muslim)
+
+---
+
+### 180. **Tentang Amanah**
+
+﴿ إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَـٰنَـٰتِ إِلَىٰٓ أَهْلِهَا ﴾
+*“Sesungguhnya Allah menyuruh kalian untuk menyampaikan amanah kepada yang berhak menerimanya.”* (QS. An-Nisa: 58)
+
+---
+
+### 181. **Tentang Tanggung Jawab Pemimpin**
+
+« كُلُّكُمْ رَاعٍ وَكُلُّكُمْ مَسْئُولٌ عَنْ رَعِيَّتِهِ »
+*“Setiap kalian adalah pemimpin, dan setiap pemimpin akan dimintai pertanggungjawaban.”* (HR. Bukhari & Muslim)
+
+---
+
+### 182. **Tentang Larangan Boros**
+
+﴿ إِنَّ ٱلْمُبَذِّرِينَ كَانُوٓا۟ إِخْوَٰنَ ٱلشَّيَـٰطِينِ ﴾
+*“Sesungguhnya orang-orang yang boros itu adalah saudara-saudara setan.”* (QS. Al-Isra: 27)
+
+---
+
+### 183. **Tentang Makan Halal**
+
+﴿ يَـٰٓأَيُّهَا ٱلنَّاسُ كُلُوا۟ مِمَّا فِى ٱلْأَرْضِ حَلَـٰلًۭا طَيِّبًۭا ﴾
+*“Wahai manusia, makanlah yang halal lagi baik dari apa yang ada di bumi.”* (QS. Al-Baqarah: 168)
+
+---
+
+### 184. **Tentang Tidak Mencaci Makanan**
+
+« مَا عَابَ النَّبِيُّ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ طَعَامًا قَطُّ »
+*“Rasulullah ﷺ tidak pernah mencela makanan sama sekali.”* (HR. Bukhari & Muslim)
+
+---
+
+### 185. **Tentang Larangan Khianat**
+
+﴿ يَـٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ لَا تَخُونُوا۟ ٱللَّهَ وَٱلرَّسُولَ ﴾
+*“Wahai orang-orang beriman, janganlah kalian berkhianat kepada Allah dan Rasul.”* (QS. Al-Anfal: 27)
+
+---
+
+### 186. **Tentang Dosa Besar**
+
+« اجْتَنِبُوا السَّبْعَ الْمُوبِقَاتِ »
+*“Jauhilah tujuh perkara yang membinasakan (dosa besar).”* (HR. Bukhari & Muslim)
+
+---
+
+### 187. **Tentang Menjaga Amanah Harta Anak Yatim**
+
+﴿ إِنَّ ٱلَّذِينَ يَأْكُلُونَ أَمْوَٰلَ ٱلْيَتَـٰمَىٰ ظُلْمًا إِنَّمَا يَأْكُلُونَ فِى بُطُونِهِمْ نَارًۭا ﴾
+*“Sesungguhnya orang-orang yang memakan harta anak yatim secara zalim, maka sebenarnya mereka menelan api dalam perutnya.”* (QS. An-Nisa: 10)
+
+---
+
+### 188. **Tentang Menjaga Lisan**
+
+« مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الْآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ »
+*“Barangsiapa beriman kepada Allah dan hari akhir, hendaklah berkata baik atau diam.”* (HR. Bukhari & Muslim)
+
+---
+
+### 189. **Tentang Larangan Membunuh**
+
+﴿ وَلَا تَقْتُلُوا۟ ٱلنَّفْسَ ٱلَّتِى حَرَّمَ ٱللَّهُ ﴾
+*“Dan janganlah kamu membunuh jiwa yang diharamkan Allah.”* (QS. Al-Isra: 33)
+
+---
+
+### 190. **Tentang Larangan Minuman Keras**
+
+« كُلُّ مُسْكِرٍ خَمْرٌ وَكُلُّ مُسْكِرٍ حَرَامٌ »
+*“Setiap yang memabukkan adalah khamr, dan setiap yang memabukkan itu haram.”* (HR. Muslim)
+
+---
+
+### 191. **Tentang Perintah Menjaga Keluarga dari Neraka**
+
+﴿ قُوا۟ أَنفُسَكُمْ وَأَهْلِيكُمْ نَارًۭا ﴾
+*“Peliharalah dirimu dan keluargamu dari api neraka.”* (QS. At-Tahrim: 6)
+
+---
+
+### 192. **Tentang Hak Orang Tua**
+
+« رِضَا اللَّهِ فِي رِضَا الْوَالِدِ، وَسَخَطُ اللَّهِ فِي سَخَطِ الْوَالِدِ »
+*“Ridha Allah tergantung pada ridha orang tua, murka Allah tergantung pada murka orang tua.”* (HR. Tirmidzi)
+
+---
+
+### 193. **Tentang Berbuat Baik kepada Tetangga**
+
+« مَا زَالَ جِبْرِيلُ يُوصِينِي بِالْجَارِ حَتَّى ظَنَنْتُ أَنَّهُ سَيُوَرِّثُهُ »
+*“Jibril terus-menerus berwasiat kepadaku tentang tetangga hingga aku mengira ia akan mewariskannya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 194. **Tentang Larangan Menyakiti Tetangga**
+
+« وَاللَّهِ لَا يُؤْمِنُ مَنْ لَا يَأْمَنُ جَارُهُ بَوَائِقَهُ »
+*“Demi Allah, tidak beriman orang yang tetangganya tidak merasa aman dari gangguannya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 195. **Tentang Keadilan**
+
+﴿ إِنَّ ٱللَّهَ يُحِبُّ ٱلْمُقْسِطِينَ ﴾
+*“Sesungguhnya Allah mencintai orang-orang yang adil.”* (QS. Al-Mumtahanah: 8)
+
+---
+
+### 196. **Tentang Sifat Dermawan**
+
+« السَّخِيُّ قَرِيبٌ مِنَ اللَّهِ قَرِيبٌ مِنَ النَّاسِ قَرِيبٌ مِنَ الْجَنَّةِ »
+*“Orang yang dermawan dekat dengan Allah, dekat dengan manusia, dan dekat dengan surga.”* (HR. Tirmidzi)
+
+---
+
+### 197. **Tentang Iri kepada Dua Hal**
+
+« لَا حَسَدَ إِلَّا فِي اثْنَتَيْنِ: رَجُلٌ آتَاهُ اللَّهُ الْقُرْآنَ... وَرَجُلٌ آتَاهُ اللَّهُ مَالًا »
+*“Tidak boleh iri kecuali pada dua hal: seseorang yang Allah beri Al-Qur’an lalu diamalkan, dan seseorang yang Allah beri harta lalu diinfakkan.”* (HR. Bukhari & Muslim)
+
+---
+
+### 198. **Tentang Larangan Riba**
+
+﴿ وَأَحَلَّ ٱللَّهُ ٱلْبَيْعَ وَحَرَّمَ ٱلرِّبَوٰا۟ ﴾
+*“Allah menghalalkan jual beli dan mengharamkan riba.”* (QS. Al-Baqarah: 275)
+
+---
+
+### 199. **Tentang Persamaan di Sisi Allah**
+
+« لَا فَضْلَ لِعَرَبِيٍّ عَلَى أَعْجَمِيٍّ... إِلَّا بِالتَّقْوَى »
+*“Tidak ada keutamaan orang Arab atas orang non-Arab... kecuali dengan takwa.”* (HR. Ahmad)
+
+---
+
+### 200. **Tentang Amal yang Tidak Terputus**
+
+« إِذَا مَاتَ الْإِنْسَانُ انْقَطَعَ عَنْهُ عَمَلُهُ إِلَّا مِنْ ثَلَاثٍ: صَدَقَةٍ جَارِيَةٍ، أَوْ عِلْمٍ يُنْتَفَعُ بِهِ، أَوْ وَلَدٍ صَالِحٍ يَدْعُو لَهُ »
+*“Apabila manusia meninggal, terputus amalnya kecuali tiga: sedekah jariyah, ilmu yang bermanfaat, atau anak shalih yang mendoakannya.”* (HR. Muslim)
+
+---
+
+
+---
+
+## 📖 Dalil 201–249
+
+### 201. **Tentang Keutamaan Istiqamah**
+
+﴿ إِنَّ ٱلَّذِينَ قَالُوا۟ رَبُّنَا ٱللَّهُ ثُمَّ ٱسْتَقَـٰمُوا۟ ﴾
+*“Sesungguhnya orang-orang yang berkata: Tuhan kami adalah Allah, kemudian mereka istiqamah...”* (QS. Fussilat: 30)
+
+---
+
+### 202. **Tentang Menepati Janji**
+
+« آيَةُ الْمُنَافِقِ ثَلاَثٌ... وَإِذَا وَعَدَ أَخْلَفَ »
+*“Tanda orang munafik ada tiga… jika berjanji ia ingkar.”* (HR. Bukhari & Muslim)
+
+---
+
+### 203. **Tentang Menuntut Rizki Halal**
+
+﴿ فَٱمْشُوا۟ فِى مَنَاكِبِهَا وَكُلُوا۟ مِن رِّزْقِهِ ﴾
+*“Berjalanlah di segala penjurunya dan makanlah dari rezeki-Nya.”* (QS. Al-Mulk: 15)
+
+---
+
+### 204. **Tentang Larangan Zina**
+
+﴿ وَلَا تَقْرَبُوا۟ ٱلزِّنَىٰ ۖ إِنَّهُۥ كَانَ فَـٰحِشَةً وَسَآءَ سَبِيلًۭا ﴾
+*“Janganlah kamu mendekati zina, sesungguhnya zina itu keji dan jalan yang buruk.”* (QS. Al-Isra: 32)
+
+---
+
+### 205. **Tentang Doa Perlindungan dari Syaitan**
+
+﴿ وَإِمَّا يَنزَغَنَّكَ مِنَ ٱلشَّيْطَـٰنِ نَزْغٌۭ فَٱسْتَعِذْ بِٱللَّهِ ﴾
+*“Jika setan mengganggumu dengan suatu godaan, maka mohonlah perlindungan kepada Allah.”* (QS. Al-A’raf: 200)
+
+---
+
+### 206. **Tentang Sifat Dermawan**
+
+« السَّخِيُّ قَرِيبٌ مِنَ اللَّهِ، قَرِيبٌ مِنَ الْجَنَّةِ »
+*“Orang dermawan dekat dengan Allah, dekat dengan surga.”* (HR. Tirmidzi)
+
+---
+
+### 207. **Tentang Larangan Sombong**
+
+﴿ وَلَا تَمْشِ فِى ٱلْأَرْضِ مَرَحًۭا ﴾
+*“Janganlah engkau berjalan di bumi dengan angkuh.”* (QS. Luqman: 18)
+
+---
+
+### 208. **Tentang Jujur dalam Jual Beli**
+
+« التَّاجِرُ الصَّدُوقُ مَعَ النَّبِيِّينَ وَالصِّدِّيقِينَ وَالشُّهَدَاءِ »
+*“Pedagang yang jujur akan bersama para nabi, shiddiqin, dan syuhada.”* (HR. Tirmidzi)
+
+---
+
+### 209. **Tentang Bersabar dalam Musibah**
+
+﴿ وَبَشِّرِ ٱلصَّـٰبِرِينَ ﴾
+*“Sampaikan kabar gembira bagi orang-orang yang sabar.”* (QS. Al-Baqarah: 155)
+
+---
+
+### 210. **Tentang Shalat sebagai Cahaya**
+
+« الصَّلاَةُ نُورٌ »
+*“Shalat adalah cahaya.”* (HR. Muslim)
+
+---
+
+### 211. **Tentang Amal Shalih**
+
+﴿ مَنۡ عَمِلَ صَـٰلِحًۭا فَلِنَفْسِهِۦ ﴾
+*“Barangsiapa beramal saleh, maka itu untuk dirinya sendiri.”* (QS. Al-Jatsiyah: 15)
+
+---
+
+### 212. **Tentang Larangan Kikir**
+
+﴿ وَلَا يَحْسَبَنَّ ٱلَّذِينَ يَبْخَلُونَ بِمَآ ءَاتَىٰهُمُ ٱللَّهُ ﴾
+*“Janganlah orang-orang yang kikir dengan karunia Allah menyangka bahwa itu baik bagi mereka.”* (QS. Ali Imran: 180)
+
+---
+
+### 213. **Tentang Akhlak Terbaik**
+
+« أَكْمَلُ الْمُؤْمِنِينَ إِيمَانًا أَحْسَنُهُمْ خُلُقًا »
+*“Mukmin yang paling sempurna imannya adalah yang paling baik akhlaknya.”* (HR. Tirmidzi)
+
+---
+
+### 214. **Tentang Menjaga Lisan**
+
+« مَنْ صَمَتَ نَجَا »
+*“Barangsiapa diam, maka ia selamat.”* (HR. Tirmidzi)
+
+---
+
+### 215. **Tentang Dunia Hanyalah Permainan**
+
+﴿ وَمَا ٱلْحَيَوٰةُ ٱلدُّنْيَآ إِلَّا لَعِبٌۭ وَلَهْوٌۭ ﴾
+*“Kehidupan dunia itu hanyalah permainan dan senda gurau.”* (QS. Al-Ankabut: 64)
+
+---
+
+### 216. **Tentang Menolong Orang Lemah**
+
+« هَلْ تُنْصَرُونَ وَتُرْزَقُونَ إِلَّا بِضُعَفَائِكُمْ »
+*“Kalian diberi rezeki dan pertolongan karena orang-orang lemah di antara kalian.”* (HR. Bukhari)
+
+---
+
+### 217. **Tentang Larangan Mencaci**
+
+﴿ وَلَا تَسُبُّوا۟ ٱلَّذِينَ يَدْعُونَ مِن دُونِ ٱللَّهِ ﴾
+*“Janganlah kalian mencaci sembahan yang mereka sembah selain Allah.”* (QS. Al-An’am: 108)
+
+---
+
+### 218. **Tentang Keutamaan Ilmu**
+
+« فَضْلُ الْعَالِمِ عَلَى الْعَابِدِ كَفَضْلِي عَلَى أَدْنَاكُمْ »
+*“Keutamaan orang berilmu dibanding ahli ibadah seperti keutamaanku atas orang yang paling rendah di antara kalian.”* (HR. Tirmidzi)
+
+---
+
+### 219. **Tentang Larangan Membunuh Jiwa**
+
+﴿ مَن قَتَلَ نَفْسًۢا بِغَيْرِ نَفْسٍ أَوْ فَسَادٍۢ فِى ٱلْأَرْضِ فَكَأَنَّمَا قَتَلَ ٱلنَّاسَ جَمِيعًۭا ﴾
+*“Barangsiapa membunuh satu jiwa tanpa alasan yang benar, seakan-akan dia membunuh seluruh manusia.”* (QS. Al-Maidah: 32)
+
+---
+
+### 220. **Tentang Sifat Malu**
+
+« الْحَيَاءُ خَيْرٌ كُلُّهُ »
+*“Rasa malu itu semuanya adalah kebaikan.”* (HR. Muslim)
+
+---
+
+### 221. **Tentang Membaca Al-Qur’an**
+
+﴿ إِنَّ ٱلَّذِينَ يَتْلُونَ كِتَـٰبَ ٱللَّهِ ﴾
+*“Sesungguhnya orang-orang yang selalu membaca Kitab Allah...”* (QS. Fatir: 29)
+
+---
+
+### 222. **Tentang Hati yang Tenang**
+
+﴿ أَلَا بِذِكْرِ ٱللَّهِ تَطْمَئِنُّ ٱلْقُلُوبُ ﴾
+*“Hanya dengan mengingat Allah hati menjadi tenang.”* (QS. Ar-Ra’d: 28)
+
+---
+
+### 223. **Tentang Takut pada Allah**
+
+« وَاللَّهِ لَأَنَا أَتْقَاكُمْ لِلَّهِ وَأَخْشَاكُمْ لَهُ »
+*“Demi Allah, aku adalah orang yang paling bertakwa dan paling takut kepada-Nya.”* (HR. Bukhari)
+
+---
+
+### 224. **Tentang Amanah**
+
+﴿ وَأَوْفُوا۟ ٱلْعَهْدَ ﴾
+*“Tunaikanlah amanah dan janji.”* (QS. Al-Isra: 34)
+
+---
+
+### 225. **Tentang Doa Mustajab Orang Terdzalimi**
+
+« اتَّقِ دَعْوَةَ الْمَظْلُومِ فَإِنَّهَا تُحْمَلُ فَوْقَ الْغَمَامِ »
+*“Takutlah terhadap doa orang yang terzalimi, karena doanya dibawa di atas awan.”* (HR. Tirmidzi)
+
+---
+
+### 226. **Tentang Keutamaan Istighfar**
+
+﴿ فَقُلْتُ ٱسْتَغْفِرُوا۟ رَبَّكُمْ إِنَّهُۥ كَانَ غَفَّارًۭا ﴾
+*“Mohonlah ampun kepada Tuhanmu, sesungguhnya Dia Maha Pengampun.”* (QS. Nuh: 10)
+
+---
+
+### 227. **Tentang Larangan Hasad**
+
+« لاَ يَحِلُّ لِمُسْلِمٍ أَنْ يَهْجُرَ أَخَاهُ فَوْقَ ثَلاَثٍ »
+*“Tidak halal bagi seorang muslim mendiamkan saudaranya lebih dari tiga hari.”* (HR. Bukhari & Muslim)
+
+---
+
+### 228. **Tentang Kebaikan Kecil**
+
+« لَا تَحْقِرَنَّ مِنَ الْمَعْرُوفِ شَيْئًا »
+*“Janganlah meremehkan suatu kebaikan sekecil apapun.”* (HR. Muslim)
+
+---
+
+### 229. **Tentang Orang Paling Mulia**
+
+﴿ إِنَّ أَكْرَمَكُمْ عِندَ ٱللَّهِ أَتْقَىٰكُمْ ﴾
+*“Sesungguhnya yang paling mulia di sisi Allah adalah yang paling bertakwa.”* (QS. Al-Hujurat: 13)
+
+---
+
+### 230. **Tentang Menahan Amarah**
+
+« لَيْسَ الشَّدِيدُ بِالصُّرَعَةِ إِنَّمَا الشَّدِيدُ مَنْ يَمْلِكُ نَفْسَهُ عِنْدَ الْغَضَبِ »
+*“Orang kuat bukanlah yang pandai bergulat, tapi yang mampu mengendalikan diri saat marah.”* (HR. Bukhari & Muslim)
+
+---
+
+### 231. **Tentang Sifat Dermawan**
+
+﴿ وَمَآ أَنفَقْتُم مِّن شَىْءٍۢ فَهُوَ يُخْلِفُهُۥ ﴾
+*“Apa saja yang kamu nafkahkan, Allah akan menggantinya.”* (QS. Saba: 39)
+
+---
+
+### 232. **Tentang Menjauhi Syirik**
+
+﴿ إِنَّ ٱلشِّرْكَ لَظُلْمٌ عَظِيمٌ ﴾
+*“Sesungguhnya syirik adalah kezaliman yang besar.”* (QS. Luqman: 13)
+
+---
+
+### 233. **Tentang Doa Orang Tua**
+
+« دَعْوَةُ الْوَالِدِ مُسْتَجَابَةٌ »
+*“Doa orang tua itu mustajab.”* (HR. Tirmidzi)
+
+---
+
+### 234. **Tentang Berbuat Ihsan**
+
+﴿ إِنَّ ٱللَّهَ يُحِبُّ ٱلْمُحْسِنِينَ ﴾
+*“Sesungguhnya Allah mencintai orang-orang yang berbuat ihsan.”* (QS. Al-Baqarah: 195)
+
+---
+
+### 235. **Tentang Larangan Berburuk Sangka**
+
+﴿ إِنَّ بَعْضَ ٱلظَّنِّ إِثْمٌۭ ﴾
+*“Sesungguhnya sebagian prasangka itu dosa.”* (QS. Al-Hujurat: 12)
+
+---
+
+### 236. **Tentang Menepati Timbangan**
+
+﴿ وَأَقِيمُوا۟ ٱلْوَزْنَ بِٱلْقِسْطِ ﴾
+*“Tegakkanlah timbangan dengan adil.”* (QS. Ar-Rahman: 9)
+
+---
+
+### 237. **Tentang Doa di Malam Hari**
+
+« يَنْزِلُ رَبُّنَا كُلَّ لَيْلَةٍ إِلَى السَّمَاءِ الدُّنْيَا »
+*“Tuhan kita turun ke langit dunia setiap malam.”* (HR. Bukhari & Muslim)
+
+---
+
+### 238. **Tentang Keutamaan Sabar**
+
+« وَمَا أُعْطِيَ أَحَدٌ عَطَاءً خَيْرًا وَأَوْسَعَ مِنَ الصَّبْرِ »
+*“Tidak ada pemberian yang lebih baik dan lebih luas daripada kesabaran.”* (HR. Bukhari & Muslim)
+
+---
+
+### 239. **Tentang Keutamaan Menjaga Lisan**
+
+« مَنْ يَضْمَنْ لِي مَا بَيْنَ لَحْيَيْهِ أَضْمَنْ لَهُ الْجَنَّةَ »
+*“Barangsiapa menjaga lisannya, aku jamin surga baginya.”* (HR. Bukhari)
+
+---
+
+### 240. **Tentang Qana’ah**
+
+« ارْضَ بِمَا قَسَمَ اللَّهُ لَكَ تَكُنْ أَغْنَى النَّاسِ »
+*“Ridhalah dengan apa yang Allah berikan, maka engkau akan menjadi orang terkaya.”* (HR. Tirmidzi)
+
+---
+
+### 241. **Tentang Keutamaan Silaturahmi**
+
+﴿ وَٱلَّذِينَ يَصِلُونَ مَآ أَمَرَ ٱللَّهُ بِهِۦٓ أَن يُوصَلَ ﴾
+*“Dan orang-orang yang menyambung apa yang Allah perintahkan untuk disambung.”* (QS. Ar-Ra’d: 21)
+
+---
+
+### 242. **Tentang Kebaikan kepada Tetangga**
+
+« مَا زَالَ جِبْرِيلُ يُوصِينِي بِالْجَارِ »
+*“Jibril terus-menerus berpesan kepadaku tentang tetangga.”* (HR. Bukhari & Muslim)
+
+---
+
+### 243. **Tentang Larangan Putus Asa**
+
+﴿ لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ ﴾
+*“Janganlah kamu berputus asa dari rahmat Allah.”* (QS. Az-Zumar: 53)
+
+---
+
+### 244. **Tentang Menyebarkan Salam**
+
+« أَفْشُوا السَّلَامَ تَسْلَمُوا »
+*“Sebarkanlah salam, niscaya kalian selamat.”* (HR. Ahmad)
+
+---
+
+### 245. **Tentang Menolong Sesama**
+
+﴿ إِنَّ ٱللَّهَ فِى عَوْنِ ٱلْعَبْدِ مَا كَانَ ٱلْعَبْدُ فِى عَوْنِ أَخِيهِ ﴾
+*“Allah menolong hamba selama ia menolong saudaranya.”* (HR. Muslim)
+
+---
+
+### 246. **Tentang Larangan Riba**
+
+﴿ يَمْحَقُ ٱللَّهُ ٱلرِّبَوٰا وَيُرْبِى ٱلصَّدَقَـٰتِ ﴾
+*“Allah memusnahkan riba dan menyuburkan sedekah.”* (QS. Al-Baqarah: 276)
+
+---
+
+### 247. **Tentang Amal Kecil Dibalas**
+
+﴿ فَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ خَيْرًۭا يَرَهُ ﴾
+*“Barangsiapa berbuat kebaikan seberat dzarrah, niscaya dia akan melihat balasannya.”* (QS. Az-Zalzalah: 7)
+
+---
+
+### 248. **Tentang Menuntut Ilmu**
+
+« مَنْ يُرِدِ اللَّهُ بِهِ خَيْرًا يُفَقِّهْهُ فِي الدِّينِ »
+*“Barangsiapa yang Allah kehendaki kebaikan baginya, maka Allah jadikan ia faham agama.”* (HR. Bukhari & Muslim)
+
+---
+
+### 249. **Tentang Kunci Surga**
+
+« مَنْ قَالَ لَا إِلَهَ إِلَّا اللَّهُ دَخَلَ الْجَنَّةَ »
+*“Barangsiapa mengucapkan La ilaha illallah, dia masuk surga.”* (HR. Bukhari & Muslim)
+
+---
+
+---
+
+### 250. **Tentang Menolong Orang Tertimpa Musibah**
+
+« مَنْ فَرَّجَ عَنْ مُسْلِمٍ كُرْبَةً مِنْ كُرَبِ الدُّنْيَا فَرَّجَ اللَّهُ عَنْهُ كُرْبَةً مِنْ كُرَبِ يَوْمِ الْقِيَامَةِ »
+*“Barangsiapa meringankan kesusahan seorang muslim di dunia, Allah akan meringankan kesusahannya di hari kiamat.”* (HR. Muslim)
+
+---
+
+### 251. **Tentang Larangan Hasut**
+
+﴿ وَدُّوا۟ لَوْ تَكْفُرُونَ كَمَا كَفَرُوا۟ فَتَكُونُونَ سَوَآءًۭ ﴾
+*“Mereka ingin agar kamu kafir sebagaimana mereka telah kafir, lalu kamu sama dengan mereka.”* (QS. An-Nisa: 89)
+
+---
+
+### 252. **Tentang Cinta Karena Allah**
+
+« أَنْ يُحِبَّ الْمَرْءُ لَا يُحِبُّهُ إِلَّا لِلَّهِ »
+*“Mencintai seseorang tidak lain karena Allah.”* (HR. Bukhari & Muslim)
+
+---
+
+### 253. **Tentang Berpegang pada Tali Allah**
+
+﴿ وَٱعْتَصِمُوا۟ بِحَبْلِ ٱللَّهِ جَمِيعًۭا ﴾
+*“Berpeganglah kamu semuanya kepada tali Allah, dan janganlah bercerai-berai.”* (QS. Ali Imran: 103)
+
+---
+
+### 254. **Tentang Allah Maha Pemberi Rezeki**
+
+﴿ إِنَّ ٱللَّهَ هُوَ ٱلرَّزَّاقُ ذُو ٱلْقُوَّةِ ٱلْمَتِينُ ﴾
+*“Sesungguhnya Allah, Dialah Maha Pemberi rezeki, Yang mempunyai kekuatan lagi sangat kokoh.”* (QS. Adz-Dzariyat: 58)
+
+---
+
+### 255. **Ayat Kursi**
+
+﴿ ٱللَّهُ لَآ إِلَـٰهَ إِلَّا هُوَ ٱلْحَىُّ ٱلْقَيُّومُ ﴾
+*“Allah, tiada Tuhan selain Dia, Yang Hidup kekal lagi terus-menerus mengurus (makhluk-Nya).”* (QS. Al-Baqarah: 255)
+
+---
+
+### 256. **Tentang Takut pada Hari Kiamat**
+
+﴿ وَٱتَّقُوا۟ يَوْمًۭا لَّا تَجْزِى نَفْسٌ عَن نَّفْسٍۢ شَيْـًۭٔا ﴾
+*“Takutlah pada suatu hari ketika seseorang tidak dapat menggantikan orang lain sedikit pun.”* (QS. Al-Baqarah: 48)
+
+---
+
+### 257. **Tentang Membalas Kebaikan dengan Kebaikan**
+
+﴿ هَلْ جَزَآءُ ٱلْإِحْسَـٰنِ إِلَّا ٱلْإِحْسَـٰنُ ﴾
+*“Tidak ada balasan kebaikan kecuali kebaikan (pula).”* (QS. Ar-Rahman: 60)
+
+---
+
+### 258. **Tentang Shalat Malam**
+
+« عَلَيْكُمْ بِقِيَامِ اللَّيْلِ فَإِنَّهُ دَأْبُ الصَّالِحِينَ »
+*“Lakukanlah shalat malam, karena itu adalah kebiasaan orang-orang saleh sebelum kalian.”* (HR. Tirmidzi)
+
+---
+
+### 259. **Tentang Doa sebagai Senjata Mukmin**
+
+« الدُّعَاءُ سِلَاحُ الْمُؤْمِنِ »
+*“Doa adalah senjata orang beriman.”* (HR. Hakim)
+
+---
+
+### 260. **Tentang Membaca Al-Fatihah**
+
+« لَا صَلَاةَ لِمَنْ لَمْ يَقْرَأْ بِفَاتِحَةِ الْكِتَابِ »
+*“Tidak sah shalat bagi orang yang tidak membaca Al-Fatihah.”* (HR. Bukhari & Muslim)
+
+---
+
+### 261. **Tentang Menyambung Silaturahmi**
+
+« مَنْ وَصَلَ رَحِمَهُ وَصَلَهُ اللَّهُ »
+*“Barangsiapa menyambung silaturahmi, Allah akan menyambungnya (rahmat).”* (HR. Bukhari & Muslim)
+
+---
+
+### 262. **Tentang Membalas Kebaikan dengan Doa**
+
+« مَنْ صَنَعَ إِلَيْكُمْ مَعْرُوفًا فَكَافِئُوهُ »
+*“Barangsiapa berbuat baik kepadamu, maka balaslah kebaikannya.”* (HR. Abu Dawud)
+
+---
+
+### 263. **Tentang Sifat Dermawan**
+
+« الْيَدُ الْعُلْيَا خَيْرٌ مِنَ الْيَدِ السُّفْلَى »
+*“Tangan yang di atas (memberi) lebih baik daripada tangan yang di bawah (meminta).”* (HR. Bukhari & Muslim)
+
+---
+
+### 264. **Tentang Tawakal**
+
+﴿ فَإِذَا عَزَمْتَ فَتَوَكَّلْ عَلَى ٱللَّهِ ﴾
+*“Apabila kamu telah bertekad, maka bertawakallah kepada Allah.”* (QS. Ali Imran: 159)
+
+---
+
+### 265. **Tentang Allah Dekat dengan Hambanya**
+
+﴿ وَإِذَا سَأَلَكَ عِبَادِى عَنِّى فَإِنِّى قَرِيبٌ ﴾
+*“Apabila hamba-hamba-Ku bertanya kepadamu tentang Aku, maka sesungguhnya Aku dekat.”* (QS. Al-Baqarah: 186)
+
+---
+
+### 266. **Tentang Zikir Setelah Shalat**
+
+« مَنْ سَبَّحَ اللَّهَ دُبُرَ كُلِّ صَلاَةٍ ثَلاَثًا وَثَلاَثِينَ »
+*“Barangsiapa bertasbih 33 kali setelah shalat...”* (HR. Muslim)
+
+---
+
+### 267. **Tentang Sabar dan Syukur**
+
+« عَجَبًا لأَمْرِ الْمُؤْمِنِ... إِنْ أَصَابَتْهُ سَرَّاءُ شَكَرَ، وَإِنْ أَصَابَتْهُ ضَرَّاءُ صَبَرَ »
+*“Sungguh menakjubkan urusan orang beriman... jika mendapat nikmat ia bersyukur, jika ditimpa musibah ia bersabar.”* (HR. Muslim)
+
+---
+
+### 268. **Tentang Balasan bagi Orang yang Bersabar**
+
+﴿ إِنَّ ٱللَّهَ مَعَ ٱلصَّـٰبِرِينَ ﴾
+*“Sesungguhnya Allah bersama orang-orang yang sabar.”* (QS. Al-Baqarah: 153)
+
+---
+
+### 269. **Tentang Doa Orang yang Berpuasa**
+
+« لِلصَّائِمِ دَعْوَةٌ لاَ تُرَدُّ »
+*“Bagi orang yang berpuasa ada doa yang tidak tertolak.”* (HR. Ibnu Majah)
+
+---
+
+### 270. **Tentang Larangan Ghibah**
+
+﴿ وَلَا يَغْتَب بَّعْضُكُم بَعْضًۭا ﴾
+*“Janganlah sebagian kalian menggunjing sebagian yang lain.”* (QS. Al-Hujurat: 12)
+
+---
+
+### 271. **Tentang Jujur Membawa Kebaikan**
+
+« عَلَيْكُمْ بِالصِّدْقِ فَإِنَّ الصِّدْقَ يَهْدِي إِلَى الْبِرِّ »
+*“Hendaklah kalian jujur, karena jujur membawa kepada kebaikan.”* (HR. Bukhari & Muslim)
+
+---
+
+### 272. **Tentang Ikhlas**
+
+« إِنَّ اللَّهَ لَا يَقْبَلُ مِنَ الْعَمَلِ إِلَّا مَا كَانَ خَالِصًا »
+*“Allah tidak menerima amal kecuali yang ikhlas.”* (HR. Nasa’i)
+
+---
+
+### 273. **Tentang Berdoa kepada Allah**
+
+﴿ ٱدْعُوا۟ رَبَّكُمْ تَضَرُّعًۭا وَخُفْيَةً ﴾
+*“Berdoalah kepada Tuhanmu dengan rendah hati dan suara yang lembut.”* (QS. Al-A’raf: 55)
+
+---
+
+### 274. **Tentang Menolong Orang Lain**
+
+« أَحَبُّ الْأَعْمَالِ إِلَى اللَّهِ سُرُورٌ تُدْخِلُهُ عَلَى مُسْلِمٍ »
+*“Amal yang paling dicintai Allah adalah memberikan kebahagiaan kepada seorang muslim.”* (HR. Thabrani)
+
+---
+
+### 275. **Tentang Larangan Mengkhianati Amanah**
+
+﴿ لَا تَخُونُوا۟ ٱللَّهَ وَٱلرَّسُولَ ﴾
+*“Janganlah kamu mengkhianati Allah dan Rasul.”* (QS. Al-Anfal: 27)
+
+---
+
+### 276. **Tentang Keutamaan Menuntut Ilmu**
+
+« طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ »
+*“Menuntut ilmu itu wajib atas setiap muslim.”* (HR. Ibnu Majah)
+
+---
+
+### 277. **Tentang Menyembunyikan Aib**
+
+« مَنْ سَتَرَ مُسْلِمًا سَتَرَهُ اللَّهُ »
+*“Barangsiapa menutupi aib seorang muslim, Allah akan menutup aibnya.”* (HR. Muslim)
+
+---
+
+### 278. **Tentang Allah Maha Melihat**
+
+﴿ إِنَّ ٱللَّهَ كَانَ عَلَيْكُمْ رَقِيبًۭا ﴾
+*“Sesungguhnya Allah Maha Mengawasi kalian.”* (QS. An-Nisa: 1)
+
+---
+
+### 279. **Tentang Larangan Minuman Keras**
+
+« كُلُّ مُسْكِرٍ حَرَامٌ »
+*“Setiap yang memabukkan adalah haram.”* (HR. Muslim)
+
+---
+
+### 280. **Tentang Mengingat Kematian**
+
+« أَكْثِرُوا ذِكْرَ هَادِمِ اللَّذَّاتِ »
+*“Perbanyaklah mengingat pemutus segala kenikmatan (kematian).”* (HR. Tirmidzi)
+
+---
+
+### 281. **Tentang Larangan Sombong**
+
+« لَا يَدْخُلُ الْجَنَّةَ مَنْ كَانَ فِي قَلْبِهِ مِثْقَالُ ذَرَّةٍ مِنْ كِبْرٍ »
+*“Tidak masuk surga orang yang di hatinya ada kesombongan seberat biji debu.”* (HR. Muslim)
+
+---
+
+### 282. **Tentang Membaca Surat Al-Ikhlas**
+
+« أَنَّهَا تَعْدِلُ ثُلُثَ الْقُرْآنِ »
+*“Surat Al-Ikhlas sebanding dengan sepertiga Al-Qur’an.”* (HR. Bukhari)
+
+---
+
+### 283. **Tentang Menepati Timbangan**
+
+﴿ وَأَوْفُوا۟ ٱلْكَيْلَ وَٱلْمِيزَانَ ﴾
+*“Sempurnakanlah takaran dan timbangan.”* (QS. Al-An’am: 152)
+
+---
+
+### 284. **Tentang Larangan Riba**
+
+﴿ وَحَرَّمَ ٱلرِّبَوٰا ﴾
+*“Allah mengharamkan riba.”* (QS. Al-Baqarah: 275)
+
+---
+
+### 285. **Tentang Zakat**
+
+﴿ وَأَقِيمُوا۟ ٱلصَّلَوٰةَ وَءَاتُوا۟ ٱلزَّكَوٰةَ ﴾
+*“Dirikanlah shalat dan tunaikanlah zakat.”* (QS. Al-Baqarah: 43)
+
+---
+
+### 286. **Tentang Puasa**
+
+﴿ كُتِبَ عَلَيْكُمُ ٱلصِّيَامُ ﴾
+*“Diwajibkan atas kamu berpuasa.”* (QS. Al-Baqarah: 183)
+
+---
+
+### 287. **Tentang Haji**
+
+﴿ وَلِلَّهِ عَلَى ٱلنَّاسِ حِجُّ ٱلْبَيْتِ ﴾
+*“Mengerjakan haji adalah kewajiban manusia terhadap Allah.”* (QS. Ali Imran: 97)
+
+---
+
+### 288. **Tentang Menyebarkan Salam**
+
+« أَفْشُوا السَّلَامَ بَيْنَكُمْ »
+*“Sebarkanlah salam di antara kalian.”* (HR. Muslim)
+
+---
+
+### 289. **Tentang Kasih Sayang**
+
+« الرَّاحِمُونَ يَرْحَمُهُمُ الرَّحْمَنُ »
+*“Orang yang penyayang akan disayangi oleh Ar-Rahman (Allah).”* (HR. Tirmidzi)
+
+---
+
+### 290. **Tentang Larangan Dengki**
+
+﴿ أَمْ يَحْسُدُونَ ٱلنَّاسَ ﴾
+*“Apakah mereka dengki kepada manusia...”* (QS. An-Nisa: 54)
+
+---
+
+### 291. **Tentang Persaudaraan**
+
+﴿ إِنَّمَا ٱلْمُؤْمِنُونَ إِخْوَةٌ ﴾
+*“Sesungguhnya orang-orang beriman itu bersaudara.”* (QS. Al-Hujurat: 10)
+
+---
+
+### 292. **Tentang Ikhlas dalam Amal**
+
+« إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ »
+*“Sesungguhnya amal itu tergantung niatnya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 293. **Tentang Allah Maha Pengampun**
+
+﴿ إِنَّ ٱللَّهَ غَفُورٌۭ رَّحِيمٌ ﴾
+*“Sesungguhnya Allah Maha Pengampun lagi Maha Penyayang.”* (QS. Al-Baqarah: 173)
+
+---
+
+### 294. **Tentang Takwa**
+
+﴿ وَٱتَّقُوا۟ ٱللَّهَ لَعَلَّكُمْ تُفْلِحُونَ ﴾
+*“Bertakwalah kepada Allah agar kamu beruntung.”* (QS. Ali Imran: 200)
+
+---
+
+### 295. **Tentang Menolong Sesama**
+
+« وَاللَّهُ فِي عَوْنِ الْعَبْدِ »
+*“Allah akan menolong seorang hamba selama ia menolong saudaranya.”* (HR. Muslim)
+
+---
+
+### 296. **Tentang Keutamaan Sedekah**
+
+﴿ مَثَلُ ٱلَّذِينَ يُنفِقُونَ أَمْوَٰلَهُمْ فِى سَبِيلِ ٱللَّهِ ﴾
+*“Perumpamaan orang yang menafkahkan hartanya di jalan Allah...”* (QS. Al-Baqarah: 261)
+
+---
+
+### 297. **Tentang Sabar sebagai Cahaya**
+
+« وَالصَّبْرُ ضِيَاءٌ »
+*“Sabar adalah cahaya.”* (HR. Muslim)
+
+---
+
+### 298. **Tentang Syukur**
+
+﴿ لَئِن شَكَرْتُمْ لَأَزِيدَنَّكُمْ ﴾
+*“Jika kamu bersyukur, niscaya Aku tambahkan (nikmat) kepadamu.”* (QS. Ibrahim: 7)
+
+---
+
+### 299. **Tentang Hari Akhir**
+
+﴿ وَٱتَّقُوا۟ يَوْمًۭا تُرْجَعُونَ فِيهِ إِلَى ٱللَّهِ ﴾
+*“Takutlah pada suatu hari ketika kamu dikembalikan kepada Allah.”* (QS. Al-Baqarah: 281)
+
+---
+
+### 300. **Tentang Kunci Surga**
+
+« مَنْ قَالَ لَا إِلَهَ إِلَّا اللَّهُ دَخَلَ الْجَنَّةَ »
+*“Barangsiapa mengucapkan La ilaha illallah maka ia masuk surga.”* (HR. Bukhari & Muslim)
+
+---
+---
+
+## 📖 Dalil 301–350
+
+### 301. **Tentang Menjaga Wudhu**
+
+« لاَ يُحَافِظُ عَلَى الْوُضُوءِ إِلَّا مُؤْمِنٌ »
+*“Tidak ada yang menjaga wudhu kecuali orang beriman.”* (HR. Ahmad)
+
+---
+
+### 302. **Tentang Larangan Memutus Silaturahmi**
+
+﴿ فَهَلْ عَسَيْتُمْ إِن تَوَلَّيْتُمْ أَن تُفْسِدُوا۟ فِى ٱلْأَرْضِ وَتُقَطِّعُوٓا۟ أَرْحَامَكُمْ ﴾
+*“Apakah sekiranya kamu berkuasa akan berbuat kerusakan di bumi dan memutuskan silaturahmi?”* (QS. Muhammad: 22)
+
+---
+
+### 303. **Tentang Shalat di Awal Waktu**
+
+« أَحَبُّ الأَعْمَالِ إِلَى اللَّهِ الصَّلاَةُ عَلَى وَقْتِهَا »
+*“Amal yang paling dicintai Allah adalah shalat tepat pada waktunya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 304. **Tentang Larangan Menunda Taubat**
+
+﴿ وَتُوبُوٓا۟ إِلَى ٱللَّهِ جَمِيعًۭا أَيُّهَ ٱلْمُؤْمِنُونَ لَعَلَّكُمْ تُفْلِحُونَ ﴾
+*“Bertaubatlah kamu sekalian kepada Allah, agar kamu beruntung.”* (QS. An-Nur: 31)
+
+---
+
+### 305. **Tentang Sedekah Rahasia**
+
+﴿ إِن تُبْدُوا۟ ٱلصَّدَقَـٰتِ فَنِعِمَّا هِىَ ۖ وَإِن تُخْفُوهَا وَتُؤْتُوهَا ٱلْفُقَرَآءَ فَهُوَ خَيْرٌۭ لَّكُمْ ﴾
+*“Jika kamu menampakkan sedekah, maka itu baik; tetapi jika kamu menyembunyikannya dan memberikannya kepada fakir miskin, itu lebih baik bagimu.”* (QS. Al-Baqarah: 271)
+
+---
+
+### 306. **Tentang Keutamaan Zikir Pagi dan Petang**
+
+« مَنْ قَالَ حِينَ يُصْبِحُ: لاَ إِلَهَ إِلاَّ اللَّهُ وَحْدَهُ لاَ شَرِيكَ لَهُ ... كَانَ لَهُ عَشْرُ حَسَنَاتٍ »
+*“Barangsiapa membaca: La ilaha illallah wahdahu la syarika lah... maka baginya sepuluh kebaikan.”* (HR. Bukhari)
+
+---
+
+### 307. **Tentang Sifat Tawadhu’**
+
+« وَمَا تَوَاضَعَ أَحَدٌ لِلَّهِ إِلاَّ رَفَعَهُ اللَّهُ »
+*“Tidaklah seseorang merendahkan diri karena Allah melainkan Allah akan mengangkat derajatnya.”* (HR. Muslim)
+
+---
+
+### 308. **Tentang Larangan Durhaka pada Orang Tua**
+
+﴿ فَلَا تَقُل لَّهُمَآ أُفٍّۢ وَلَا تَنْهَرْهُمَا وَقُل لَّهُمَا قَوْلًۭا كَرِيمًۭا ﴾
+*“Janganlah engkau mengatakan kepada keduanya perkataan ‘ah’, dan jangan membentak mereka, dan ucapkanlah perkataan mulia.”* (QS. Al-Isra: 23)
+
+---
+
+### 309. **Tentang Berpegang pada Sunnah**
+
+« تَرَكْتُ فِيكُمْ أَمْرَيْنِ لَنْ تَضِلُّوا مَا تَمَسَّكْتُمْ بِهِمَا: كِتَابَ اللَّهِ وَسُنَّةَ نَبِيِّهِ »
+*“Aku tinggalkan kepada kalian dua perkara, kalian tidak akan sesat selama berpegang pada keduanya: Kitab Allah dan Sunnah Nabi-Nya.”* (HR. Malik)
+
+---
+
+### 310. **Tentang Menutup Aib**
+
+« لاَ يُسْتُرُ عَبْدٌ عَبْدًا فِي الدُّنْيَا إِلاَّ سَتَرَهُ اللَّهُ يَوْمَ الْقِيَامَةِ »
+*“Tidaklah seorang hamba menutupi aib saudaranya di dunia, melainkan Allah menutup aibnya di hari kiamat.”* (HR. Muslim)
+
+---
+
+### 311. **Tentang Menjauhi Riya’**
+
+« مَنْ صَلَّى يُرَائِي فَقَدْ أَشْرَكَ »
+*“Barangsiapa shalat dengan tujuan riya’, maka ia telah berbuat syirik.”* (HR. Ahmad)
+
+---
+
+### 312. **Tentang Menolong Yatim**
+
+« أَنَا وَكَافِلُ الْيَتِيمِ فِي الْجَنَّةِ هَكَذَا »
+*“Aku dan orang yang mengasuh anak yatim akan berada di surga seperti ini (Rasulullah mengisyaratkan dengan jari telunjuk dan tengah).”* (HR. Bukhari)
+
+---
+
+### 313. **Tentang Menjaga Amanah**
+
+﴿ إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَـٰنَـٰتِ إِلَىٰٓ أَهْلِهَا ﴾
+*“Sesungguhnya Allah menyuruhmu menunaikan amanah kepada yang berhak menerimanya.”* (QS. An-Nisa: 58)
+
+---
+
+### 314. **Tentang Ikhlas dan Ridha Allah**
+
+« مَنْ أَرْضَى اللَّهَ بِسَخَطِ النَّاسِ رَضِيَ اللَّهُ عَنْهُ »
+*“Barangsiapa mencari ridha Allah meskipun dimurkai manusia, maka Allah akan ridha kepadanya.”* (HR. Tirmidzi)
+
+---
+
+### 315. **Tentang Shalat sebagai Penolong**
+
+﴿ وَٱسْتَعِينُوا۟ بِٱلصَّبْرِ وَٱلصَّلَوٰةِ ﴾
+*“Mintalah pertolongan dengan sabar dan shalat.”* (QS. Al-Baqarah: 45)
+
+---
+
+### 316. **Tentang Sifat Qana’ah**
+
+« لَيْسَ الْغِنَى عَنْ كَثْرَةِ الْعَرَضِ وَلَكِنَّ الْغِنَى غِنَى النَّفْسِ »
+*“Kaya bukanlah banyak harta, tetapi kaya adalah hati yang merasa cukup.”* (HR. Bukhari & Muslim)
+
+---
+
+### 317. **Tentang Larangan Menyia-nyiakan Waktu**
+
+« نِعْمَتَانِ مَغْبُونٌ فِيهِمَا كَثِيرٌ مِنَ النَّاسِ: الصِّحَّةُ وَالْفَرَاغُ »
+*“Ada dua nikmat yang banyak manusia lalai: kesehatan dan waktu luang.”* (HR. Bukhari)
+
+---
+
+### 318. **Tentang Doa Masuk Surga**
+
+« اللَّهُمَّ إِنِّي أَسْأَلُكَ الْجَنَّةَ »
+*“Ya Allah, aku memohon surga kepada-Mu.”* (HR. Muslim)
+
+---
+
+### 319. **Tentang Larangan Menunda Shalat**
+
+﴿ فَوَيْلٌۭ لِّلْمُصَلِّينَ ﴿٤﴾ ٱلَّذِينَ هُمْ عَن صَلَاتِهِمْ سَاهُونَ ﴾
+*“Celakalah orang-orang yang shalat, (yaitu) yang lalai dari shalatnya.”* (QS. Al-Ma’un: 4–5)
+
+---
+
+### 320. **Tentang Sifat Malu**
+
+« الْحَيَاءُ مِنَ الْإِيمَانِ »
+*“Malu itu bagian dari iman.”* (HR. Bukhari & Muslim)
+
+---
+
+### 321. **Tentang Doa Perlindungan dari Api Neraka**
+
+« اللَّهُمَّ أَجِرْنِي مِنَ النَّارِ »
+*“Ya Allah, lindungilah aku dari api neraka.”* (HR. Abu Dawud)
+
+---
+
+### 322. **Tentang Menuntut Ilmu**
+
+﴿ يَرْفَعِ ٱللَّهُ ٱلَّذِينَ ءَامَنُوا۟ مِنكُمْ وَٱلَّذِينَ أُوتُوا۟ ٱلْعِلْمَ دَرَجَـٰتٍۢ ﴾
+*“Allah akan meninggikan orang-orang yang beriman dan orang yang diberi ilmu pengetahuan beberapa derajat.”* (QS. Al-Mujadilah: 11)
+
+---
+
+### 323. **Tentang Larangan Bunuh Diri**
+
+﴿ وَلَا تَقْتُلُوٓا۟ أَنفُسَكُمْ ﴾
+*“Dan janganlah kamu membunuh dirimu sendiri.”* (QS. An-Nisa: 29)
+
+---
+
+### 324. **Tentang Zikir sebagai Penenteram Hati**
+
+« مَثَلُ الَّذِي يَذْكُرُ رَبَّهُ وَالَّذِي لاَ يَذْكُرُهُ مَثَلُ الْحَيِّ وَالْمَيِّتِ »
+*“Perumpamaan orang yang berdzikir kepada Allah dengan yang tidak berdzikir adalah seperti orang hidup dengan orang mati.”* (HR. Bukhari)
+
+---
+
+### 325. **Tentang Doa Orang Beriman**
+
+﴿ رَبَّنَآ ءَاتِنَا فِى ٱلدُّنْيَا حَسَنَةًۭ وَفِى ٱلْـَٔاخِرَةِ حَسَنَةًۭ وَقِنَا عَذَابَ ٱلنَّارِ ﴾
+*“Ya Tuhan kami, berikanlah kepada kami kebaikan di dunia dan kebaikan di akhirat, dan lindungilah kami dari siksa neraka.”* (QS. Al-Baqarah: 201)
+
+---
+
+### 326. **Tentang Larangan Menyakiti Tetangga**
+
+« وَاللَّهِ لاَ يُؤْمِنُ... الَّذِي لاَ يَأْمَنُ جَارُهُ بَوَائِقَهُ »
+*“Demi Allah, tidak beriman seseorang yang tetangganya tidak merasa aman dari gangguannya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 327. **Tentang Larangan Marah**
+
+« لاَ تَغْضَبْ »
+*“Jangan marah.”* (HR. Bukhari)
+
+---
+
+### 328. **Tentang Menjauhi Fitnah**
+
+﴿ وَٱتَّقُوا۟ فِتْنَةًۭ لَّا تُصِيبَنَّ ٱلَّذِينَ ظَلَمُوا۟ مِنكُمْ خَآصَّةًۭ ﴾
+*“Takutlah terhadap fitnah yang tidak hanya menimpa orang zalim di antara kalian.”* (QS. Al-Anfal: 25)
+
+---
+
+### 329. **Tentang Doa Mohon Ilmu**
+
+« اللَّهُمَّ انْفَعْنِي بِمَا عَلَّمْتَنِي وَعَلِّمْنِي مَا يَنْفَعُنِي »
+*“Ya Allah, berilah manfaat dengan apa yang Engkau ajarkan kepadaku, dan ajarkan aku apa yang bermanfaat bagiku.”* (HR. Tirmidzi)
+
+---
+
+### 330. **Tentang Keutamaan Al-Qur’an**
+
+« خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ »
+*“Sebaik-baik kalian adalah yang belajar Al-Qur’an dan mengajarkannya.”* (HR. Bukhari)
+
+---
+
+---
+
+## 📖 Dalil 331–400
+
+### 331. **Tentang Kematian**
+
+﴿ كُلُّ نَفْسٍۢ ذَآئِقَةُ ٱلْمَوْتِ ﴾
+*“Setiap yang bernyawa pasti akan merasakan mati.”* (QS. Ali Imran: 185)
+
+---
+
+### 332. **Tentang Dunia Hanyalah Sementara**
+
+﴿ وَمَا ٱلْحَيَوٰةُ ٱلدُّنْيَآ إِلَّا مَتَـٰعُ ٱلْغُرُورِ ﴾
+*“Kehidupan dunia itu tidak lain hanyalah kesenangan yang memperdayakan.”* (QS. Ali Imran: 185)
+
+---
+
+### 333. **Tentang Mengingat Allah**
+
+﴿ ٱلَّذِينَ ءَامَنُوا۟ وَتَطْمَئِنُّ قُلُوبُهُم بِذِكْرِ ٱللَّهِ ۗ أَلَا بِذِكْرِ ٱللَّهِ تَطْمَئِنُّ ٱلْقُلُوبُ ﴾
+*“Orang-orang yang beriman dan hati mereka menjadi tenteram dengan mengingat Allah. Ingatlah, hanya dengan mengingat Allah hati menjadi tenteram.”* (QS. Ar-Ra’d: 28)
+
+---
+
+### 334. **Tentang Kematian Tidak Bisa Ditunda**
+
+﴿ فَإِذَا جَآءَ أَجَلُهُمْ لَا يَسْتَـْٔخِرُونَ سَاعَةًۭ وَلَا يَسْتَقْدِمُونَ ﴾
+*“Apabila ajal mereka datang, mereka tidak dapat mengundurkannya barang sesaat pun dan tidak pula memajukannya.”* (QS. Al-A’raf: 34)
+
+---
+
+### 335. **Tentang Membaca Al-Qur’an**
+
+« اقْرَؤُوا الْقُرْآنَ فَإِنَّهُ يَأْتِي شَفِيعًا لأَصْحَابِهِ »
+*“Bacalah Al-Qur’an, karena sesungguhnya ia akan datang memberi syafaat kepada pembacanya.”* (HR. Muslim)
+
+---
+
+### 336. **Tentang Menolong Sesama**
+
+« مَنْ نَفَّسَ عَنْ مُؤْمِنٍ كُرْبَةً نَفَّسَ اللَّهُ عَنْهُ كُرْبَةً »
+*“Barangsiapa meringankan kesusahan seorang mukmin, Allah akan meringankan kesusahannya di hari kiamat.”* (HR. Muslim)
+
+---
+
+### 337. **Tentang Keutamaan Shalat Jamaah**
+
+« صَلاَةُ الْجَمَاعَةِ أَفْضَلُ مِنْ صَلاَةِ الْفَذِّ بِسَبْعٍ وَعِشْرِينَ دَرَجَةً »
+*“Shalat berjamaah lebih utama dibanding shalat sendirian dengan 27 derajat.”* (HR. Bukhari & Muslim)
+
+---
+
+### 338. **Tentang Mengasihi Sesama**
+
+« لاَ يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ »
+*“Tidaklah beriman salah seorang di antara kalian hingga ia mencintai saudaranya sebagaimana ia mencintai dirinya sendiri.”* (HR. Bukhari & Muslim)
+
+---
+
+### 339. **Tentang Allah Tidak Membebani**
+
+﴿ لَا يُكَلِّفُ ٱللَّهُ نَفْسًا إِلَّا وُسْعَهَا ﴾
+*“Allah tidak membebani seseorang melainkan sesuai dengan kesanggupannya.”* (QS. Al-Baqarah: 286)
+
+---
+
+### 340. **Tentang Menghormati Tamu**
+
+« مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيُكْرِمْ ضَيْفَهُ »
+*“Barangsiapa beriman kepada Allah dan hari akhir hendaklah ia memuliakan tamunya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 341. **Tentang Menghormati Tetangga**
+
+« مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيُكْرِمْ جَارَهُ »
+*“Barangsiapa beriman kepada Allah dan hari akhir hendaklah ia memuliakan tetangganya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 342. **Tentang Menjaga Lisan**
+
+« مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ »
+*“Barangsiapa beriman kepada Allah dan hari akhir hendaklah berkata baik atau diam.”* (HR. Bukhari & Muslim)
+
+---
+
+### 343. **Tentang Allah Maha Mengetahui**
+
+﴿ وَهُوَ بِكُلِّ شَىْءٍ عَلِيمٌ ﴾
+*“Dan Dia Maha Mengetahui segala sesuatu.”* (QS. Al-Baqarah: 29)
+
+---
+
+### 344. **Tentang Kesabaran dalam Musibah**
+
+﴿ وَبَشِّرِ ٱلصَّـٰبِرِينَ ﴾
+*“Dan sampaikanlah kabar gembira kepada orang-orang yang sabar.”* (QS. Al-Baqarah: 155)
+
+---
+
+### 345. **Tentang Puasa sebagai Perisai**
+
+« الصِّيَامُ جُنَّةٌ »
+*“Puasa adalah perisai.”* (HR. Bukhari & Muslim)
+
+---
+
+### 346. **Tentang Shalat sebagai Cahaya**
+
+« وَالصَّلاَةُ نُورٌ »
+*“Shalat adalah cahaya.”* (HR. Muslim)
+
+---
+
+### 347. **Tentang Larangan Menyombongkan Ilmu**
+
+« مَنْ تَعَلَّمَ عِلْمًا مِمَّا يُبْتَغَى بِهِ وَجْهُ اللَّهِ لاَ يَتَعَلَّمُهُ إِلَّا لِيُصِيبَ بِهِ عَرَضًا مِنْ الدُّنْيَا لَمْ يَجِدْ عَرْفَ الْجَنَّةِ »
+*“Barangsiapa menuntut ilmu yang seharusnya untuk mencari ridha Allah, namun dipelajarinya hanya untuk tujuan dunia, maka ia tidak akan mencium bau surga.”* (HR. Abu Dawud)
+
+---
+
+### 348. **Tentang Tidak Boleh Iri Kecuali pada Dua Hal**
+
+« لاَ حَسَدَ إِلاَّ فِي اثْنَتَيْنِ: رَجُلٌ آتَاهُ اللَّهُ الْقُرْآنَ فَهُوَ يَقُومُ بِهِ ... وَرَجُلٌ آتَاهُ اللَّهُ مَالًا فَهُوَ يُنْفِقُهُ فِي الْحَقِّ »
+*“Tidak boleh iri kecuali kepada dua orang: seseorang yang Allah beri Al-Qur’an lalu ia mengamalkannya... dan seseorang yang Allah beri harta lalu ia infakkan di jalan yang benar.”* (HR. Bukhari & Muslim)
+
+---
+
+### 349. **Tentang Balasan Kebaikan**
+
+﴿ إِنَّ ٱللَّهَ لَا يُضِيعُ أَجْرَ ٱلْمُحْسِنِينَ ﴾
+*“Sesungguhnya Allah tidak menyia-nyiakan pahala orang-orang yang berbuat baik.”* (QS. At-Taubah: 120)
+
+---
+
+### 350. **Tentang Menyucikan Jiwa**
+
+﴿ قَدْ أَفْلَحَ مَن زَكَّىٰهَا ﴾
+*“Sungguh beruntung orang yang menyucikan jiwanya.”* (QS. Asy-Syams: 9)
+
+---
+
+### 351. **Tentang Rugi Orang Lalai Shalat**
+
+﴿ فَخَلَفَ مِنۢ بَعْدِهِمْ خَلْفٌ أَضَاعُوا۟ ٱلصَّلَوٰةَ وَٱتَّبَعُوا۟ ٱلشَّهَوَٰتِ فَسَوْفَ يَلْقَوْنَ غَيًّا ﴾
+*“Kemudian datang setelah mereka generasi yang menyia-nyiakan shalat dan menuruti hawa nafsu, maka mereka akan menemui kesesatan.”* (QS. Maryam: 59)
+
+---
+
+### 352. **Tentang Jangan Putus Asa dari Rahmat Allah**
+
+﴿ لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ ﴾
+*“Janganlah berputus asa dari rahmat Allah.”* (QS. Az-Zumar: 53)
+
+---
+
+### 353. **Tentang Menahan Amarah**
+
+﴿ وَٱلْكَـٰظِمِينَ ٱلْغَيْظَ وَٱلْعَافِينَ عَنِ ٱلنَّاسِ ﴾
+*“Orang-orang yang menahan amarah dan memaafkan (kesalahan) manusia.”* (QS. Ali Imran: 134)
+
+---
+
+### 354. **Tentang Keutamaan Ilmu**
+
+« إِذَا مَاتَ الإِنسَانُ انْقَطَعَ عَنْهُ عَمَلُهُ إِلاَّ مِنْ ثَلاَثَةٍ: صَدَقَةٍ جَارِيَةٍ، أَوْ عِلْمٍ يُنْتَفَعُ بِهِ، أَوْ وَلَدٍ صَالِحٍ يَدْعُو لَهُ »
+*“Apabila manusia meninggal, terputus amalnya kecuali tiga: sedekah jariyah, ilmu yang bermanfaat, atau anak saleh yang mendoakannya.”* (HR. Muslim)
+
+---
+
+### 355. **Tentang Keutamaan Membaca Al-Qur’an**
+
+« مَنْ قَرَأَ حَرْفًا مِنْ كِتَابِ اللَّهِ فَلَهُ بِهِ حَسَنَةٌ »
+*“Barangsiapa membaca satu huruf dari Kitab Allah, maka baginya satu kebaikan.”* (HR. Tirmidzi)
+
+---
+
+### 356. **Tentang Allah Maha Pengasih**
+
+﴿ وَرَحْمَتِى وَسِعَتْ كُلَّ شَىْءٍ ﴾
+*“Rahmat-Ku meliputi segala sesuatu.”* (QS. Al-A’raf: 156)
+
+---
+
+### 357. **Tentang Membaca Basmallah**
+
+« كُلُّ أَمْرٍ ذِي بَالٍ لاَ يُبْدَأُ فِيهِ بِبِسْمِ اللَّهِ فَهُوَ أَبْتَرُ »
+*“Setiap perkara penting yang tidak dimulai dengan Bismillah maka terputus (kurang berkah).”* (HR. Ibnu Hibban)
+
+---
+
+### 358. **Tentang Allah Menolong Hambanya**
+
+« إِذَا أَحَبَّ اللَّهُ الْعَبْدَ اسْتَعْمَلَهُ »
+*“Apabila Allah mencintai seorang hamba, Dia memanfaatkannya (untuk kebaikan).”* (HR. Ahmad)
+
+---
+
+### 359. **Tentang Doa Ibu Lebih Mustajab**
+
+« ثَلاَثُ دَعَوَاتٍ لاَ تُرَدُّ: دَعْوَةُ الْوَالِدِ لِوَلَدِهِ »
+*“Tiga doa yang tidak tertolak: doa orang tua untuk anaknya...”* (HR. Tirmidzi)
+
+---
+
+### 360. **Tentang Kebaikan Itu Mudah**
+
+« الدِّينُ يُسْرٌ »
+*“Agama itu mudah.”* (HR. Bukhari)
+
+---
+
+### 361. **Tentang Larangan Menyombongkan Diri**
+
+﴿ إِنَّ ٱللَّهَ لَا يُحِبُّ كُلَّ مُخْتَالٍۢ فَخُورٍ ﴾
+*“Sesungguhnya Allah tidak menyukai orang yang sombong lagi membanggakan diri.”* (QS. Luqman: 18)
+
+---
+
+### 362. **Tentang Hidup Dunia Permainan**
+
+﴿ وَمَا ٱلْحَيَوٰةُ ٱلدُّنْيَآ إِلَّا لَعِبٌۭ وَلَهْوٌۭ ﴾
+*“Kehidupan dunia hanyalah permainan dan senda gurau.”* (QS. Al-Ankabut: 64)
+
+---
+
+### 363. **Tentang Surga Disediakan bagi Orang Bertakwa**
+
+﴿ أُعِدَّتْ لِلْمُتَّقِينَ ﴾
+*“(Surga) disediakan bagi orang-orang yang bertakwa.”* (QS. Ali Imran: 133)
+
+---
+
+### 364. **Tentang Neraka Bagi Orang Kafir**
+
+﴿ وَٱتَّقُوا۟ ٱلنَّارَ ٱلَّتِىٓ أُعِدَّتْ لِلْكَـٰفِرِينَ ﴾
+*“Peliharalah dirimu dari neraka yang disediakan bagi orang-orang kafir.”* (QS. Ali Imran: 131)
+
+---
+
+### 365. **Tentang Larangan Meremehkan Kebaikan**
+
+« لاَ تَحْقِرَنَّ مِنَ الْمَعْرُوفِ شَيْئًا وَلَوْ أَنْ تَلْقَى أَخَاكَ بِوَجْهٍ طَلْقٍ »
+*“Jangan meremehkan suatu kebaikan sekecil apapun, walau hanya dengan wajah yang ramah kepada saudaramu.”* (HR. Muslim)
+
+---
+
+### 366. **Tentang Allah Bersama Orang Bertakwa**
+
+﴿ إِنَّ ٱللَّهَ مَعَ ٱلَّذِينَ ٱتَّقَوا۟ وَٱلَّذِينَ هُمْ مُّحْسِنُونَ ﴾
+*“Sesungguhnya Allah beserta orang-orang yang bertakwa dan orang-orang yang berbuat kebaikan.”* (QS. An-Nahl: 128)
+
+---
+
+### 367. **Tentang Menjaga Hati**
+
+« أَلاَ وَإِنَّ فِي الْجَسَدِ مُضْغَةً إِذَا صَلَحَتْ صَلَحَ الْجَسَدُ كُلُّهُ »
+*“Ketahuilah, dalam jasad ada segumpal daging, jika baik maka baiklah seluruh jasad...”* (HR. Bukhari & Muslim)
+
+---
+
+### 368. **Tentang Shalat Malam Membawa Kemuliaan**
+
+« شَرَفُ الْمُؤْمِنِ قِيَامُهُ بِاللَّيْلِ »
+*“Kemuliaan seorang mukmin ada pada shalat malamnya.”* (HR. Hakim)
+
+---
+
+### 369. **Tentang Surga di Bawah Telapak Kaki Ibu**
+
+« الْجَنَّةُ تَحْتَ أَقْدَامِ الأُمَّهَاتِ »
+*“Surga berada di bawah telapak kaki ibu.”* (HR. Ahmad)
+
+---
+
+### 370. **Tentang Doa Penutup Majelis**
+
+« سُبْحَانَكَ اللَّهُمَّ وَبِحَمْدِكَ... »
+*“Maha Suci Engkau ya Allah dan dengan memuji-Mu, aku bersaksi tiada Tuhan selain Engkau, aku mohon ampun dan bertaubat kepada-Mu.”* (HR. Abu Dawud)
+
+---
+
+### 371. **Tentang Keutamaan Senyum**
+
+« تَبَسُّمُكَ فِي وَجْهِ أَخِيكَ صَدَقَةٌ »
+*“Senyummu kepada saudaramu adalah sedekah.”* (HR. Tirmidzi)
+
+---
+
+### 372. **Tentang Menjaga Pandangan**
+
+﴿ قُل لِّلْمُؤْمِنِينَ يَغُضُّوا۟ مِنْ أَبْصَـٰرِهِمْ ﴾
+*“Katakanlah kepada orang-orang beriman agar mereka menahan pandangannya.”* (QS. An-Nur: 30)
+
+---
+
+### 373. **Tentang Mencari Ilmu Hingga Mati**
+
+« اطْلُبُوا الْعِلْمَ مِنَ الْمَهْدِ إِلَى اللَّحْدِ »
+*“Carilah ilmu dari buaian hingga liang lahat.”* (HR. Baihaqi)
+
+---
+
+### 374. **Tentang Takut kepada Allah**
+
+﴿ إِنَّمَا يَخْشَى ٱللَّهَ مِنْ عِبَادِهِ ٱلْعُلَمَـٰٓؤُا۟ ﴾
+*“Sesungguhnya yang takut kepada Allah di antara hamba-hamba-Nya hanyalah ulama.”* (QS. Fathir: 28)
+
+---
+
+### 375. **Tentang Allah Maha Mendengar**
+
+﴿ إِنَّهُۥ هُوَ ٱلسَّمِيعُ ٱلْبَصِيرُ ﴾
+*“Sesungguhnya Dia Maha Mendengar lagi Maha Melihat.”* (QS. Al-Isra: 1)
+
+---
+
+### 376. **Tentang Balasan untuk Orang Baik**
+
+
+﴿ هَلْ جَزَآءُ ٱلْإِحْسَـٰنِ إِلَّا ٱلْإِحْسَـٰنُ ﴾
+*“Tidak ada balasan untuk kebaikan kecuali kebaikan pula.”* (QS. Ar-Rahman: 60)
+
+---
+
+### 377. **Tentang Syukur Nikmat**
+
+﴿ لَئِن شَكَرْتُمْ لَأَزِيدَنَّكُمْ ﴾
+*“Jika kamu bersyukur, pasti Aku akan menambah (nikmat) kepadamu.”* (QS. Ibrahim: 7)
+
+---
+
+### 378. **Tentang Allah Tidak Lupa**
+
+﴿ وَمَا كَانَ رَبُّكَ نَسِيًّۭا ﴾
+*“Dan Tuhanmu tidaklah lupa.”* (QS. Maryam: 64)
+
+---
+
+### 379. **Tentang Doa Mohon Ampunan**
+
+﴿ رَبَّنَا ٱغْفِرْ لَنَا وَلِإِخْوَـٰنِنَا ٱلَّذِينَ سَبَقُونَا بِٱلْإِيمَـٰنِ ﴾
+*“Ya Tuhan kami, ampunilah kami dan saudara-saudara kami yang telah beriman lebih dahulu daripada kami.”* (QS. Al-Hasyr: 10)
+
+---
+
+### 380. **Tentang Neraka Sangat Panas**
+
+« نَارُكُمْ جُزْءٌ مِنْ سَبْعِينَ جُزْءًا مِنْ نَارِ جَهَنَّمَ »
+*“Api kalian di dunia hanyalah satu bagian dari tujuh puluh bagian panasnya api neraka.”* (HR. Muslim)
+
+---
+
+### 381. **Tentang Amal Kecil Dinilai Allah**
+
+﴿ فَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ خَيْرًۭا يَرَهُ ﴾
+*“Barangsiapa mengerjakan kebaikan seberat zarrah niscaya dia akan melihat (balasannya).”* (QS. Az-Zalzalah: 7)
+
+---
+
+### 382. **Tentang Doa Sebelum Tidur**
+
+« بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا »
+*“Dengan nama-Mu ya Allah aku mati dan aku hidup.”* (HR. Bukhari)
+
+---
+
+### 383. **Tentang Bangun Tidur**
+
+« الْحَمْدُ لِلَّهِ الَّذِي أَحْيَانَا بَعْدَ مَا أَمَاتَنَا وَإِلَيْهِ النُّشُورُ »
+*“Segala puji bagi Allah yang telah menghidupkan kami setelah mematikan kami, dan kepada-Nya kebangkitan.”* (HR. Bukhari)
+
+---
+
+### 384. **Tentang Menjaga Waktu Shalat**
+
+﴿ إِنَّ ٱلصَّلَوٰةَ كَانَتْ عَلَى ٱلْمُؤْمِنِينَ كِتَـٰبًۭا مَّوْقُوتًۭا ﴾
+*“Sesungguhnya shalat itu adalah kewajiban yang ditentukan waktunya atas orang-orang beriman.”* (QS. An-Nisa: 103)
+
+---
+
+### 385. **Tentang Surga bagi yang Beriman**
+
+﴿ وَبَشِّرِ ٱلَّذِينَ ءَامَنُوا۟ وَعَمِلُوا۟ ٱلصَّـٰلِحَـٰتِ أَنَّ لَهُمْ جَنَّـٰتٍۢ تَجْرِى مِن تَحْتِهَا ٱلْأَنْهَـٰرُ ﴾
+*“Sampaikanlah kabar gembira kepada orang-orang yang beriman dan beramal saleh bahwa bagi mereka surga yang mengalir di bawahnya sungai-sungai.”* (QS. Al-Baqarah: 25)
+
+---
+
+### 386. **Tentang Doa Turun Hujan**
+
+« اللَّهُمَّ صَيِّبًا نَافِعًا »
+*“Ya Allah turunkanlah hujan yang bermanfaat.”* (HR. Bukhari)
+
+---
+
+### 387. **Tentang Sedekah Tidak Mengurangi Harta**
+
+« مَا نَقَصَتْ صَدَقَةٌ مِنْ مَالٍ »
+*“Harta tidak akan berkurang karena sedekah.”* (HR. Muslim)
+
+---
+
+### 388. **Tentang Allah Maha Mengetahui Isi Hati**
+
+﴿ يَعْلَمُ خَآئِنَةَ ٱلْأَعْيُنِ وَمَا تُخْفِى ٱلصُّدُورُ ﴾
+*“Dia mengetahui pandangan mata yang khianat dan apa yang disembunyikan oleh hati.”* (QS. Ghafir: 19)
+
+---
+
+### 389. **Tentang Bersyukur Setelah Makan**
+
+« الْحَمْدُ لِلَّهِ الَّذِي أَطْعَمَنِي هَذَا وَرَزَقَنِيهِ مِنْ غَيْرِ حَوْلٍ مِنِّي وَلَا قُوَّةٍ »
+*“Segala puji bagi Allah yang telah memberi makan ini kepadaku dan memberikannya tanpa daya dan kekuatan dariku.”* (HR. Abu Dawud)
+
+---
+
+### 390. **Tentang Doa Naik Kendaraan**
+
+﴿ سُبْحَـٰنَ ٱلَّذِى سَخَّرَ لَنَا هَـٰذَا وَمَا كُنَّا لَهُۥ مُقْرِنِينَ ﴾
+*“Maha Suci Allah yang telah menundukkan ini bagi kami padahal kami sebelumnya tidak mampu.”* (QS. Az-Zukhruf: 13)
+
+---
+
+### 391. **Tentang Surga untuk Orang Sabar**
+
+﴿ جَزَاهُم بِمَا صَبَرُوا۟ جَنَّةًۭ وَحَرِيرًۭا ﴾
+*“Karena kesabaran mereka, Allah memberi balasan surga dan pakaian sutra.”* (QS. Al-Insan: 12)
+
+---
+
+### 392. **Tentang Dunia Ladang Akhirat**
+
+« الدُّنْيَا مَزْرَعَةُ الآخِرَةِ »
+*“Dunia adalah ladang akhirat.”* (HR. Baihaqi)
+
+---
+
+### 393. **Tentang Zikir Lebih Baik dari Dunia**
+
+« أَلاَ أُنَبِّئُكُمْ بِخَيْرِ أَعْمَالِكُمْ... ذِكْرُ اللَّهِ »
+*“Maukah aku beritahu kalian amal terbaik... yaitu berdzikir kepada Allah.”* (HR. Tirmidzi)
+
+---
+
+### 394. **Tentang Membantu Saudara**
+
+« وَاللَّهُ فِي عَوْنِ الْعَبْدِ مَا كَانَ الْعَبْدُ فِي عَوْنِ أَخِيهِ »
+*“Allah akan menolong hamba selama hamba itu menolong saudaranya.”* (HR. Muslim)
+
+---
+
+### 395. **Tentang Tidak Sia-sia Amal**
+
+﴿ إِنَّا لَا نُضِيعُ أَجْرَ مَنْ أَحْسَنَ عَمَلًۭا ﴾
+*“Sesungguhnya Kami tidak akan menyia-nyiakan pahala orang yang berbuat baik.”* (QS. Al-Kahfi: 30)
+
+---
+
+### 396. **Tentang Malaikat Mencatat Amal**
+
+﴿ مَّا يَلْفِظُ مِن قَوْلٍ إِلَّا لَدَيْهِ رَقِيبٌ عَتِيدٌ ﴾
+*“Tidaklah seseorang mengucapkan satu kata pun melainkan ada di sisinya malaikat pengawas yang selalu hadir.”* (QS. Qaf: 18)
+
+---
+
+### 397. **Tentang Doa Masuk Pasar**
+
+« لاَ إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لاَ شَرِيكَ لَهُ... »
+*“Tiada Tuhan selain Allah, tiada sekutu bagi-Nya...” (doa masuk pasar) akan dicatat satu juta kebaikan baginya.* (HR. Tirmidzi)
+
+---
+
+### 398. **Tentang Orang yang Meninggalkan Shalat**
+
+« الْعَهْدُ الَّذِي بَيْنَنَا وَبَيْنَهُمُ الصَّلاَةُ فَمَنْ تَرَكَهَا فَقَدْ كَفَرَ »
+*“Perjanjian antara kami dan mereka adalah shalat, siapa yang meninggalkannya maka ia kafir.”* (HR. Tirmidzi)
+
+---
+
+### 399. **Tentang Haji Mabrur**
+
+« الْحَجُّ الْمَبْرُورُ لَيْسَ لَهُ جَزَاءٌ إِلَّا الْجَنَّةُ »
+*“Haji mabrur tidak ada balasan kecuali surga.”* (HR. Bukhari & Muslim)
+
+---
+
+### 400. **Tentang Menutup Dosa dengan Taubat**
+
+﴿ إِلَّا مَن تَابَ وَءَامَنَ وَعَمِلَ عَمَلًۭا صَـٰلِحًۭا فَأُو۟لَـٰٓئِكَ يُبَدِّلُ ٱللَّهُ سَيِّـَٔاتِهِمْ حَسَنَـٰتٍۭ ﴾
+*“Kecuali orang yang bertaubat, beriman, dan beramal saleh, maka Allah akan mengganti keburukan mereka dengan kebaikan.”* (QS. Al-Furqan: 70)
+
+---
+
+---
+
+## 📖 Dalil 401–500
+
+### 401. **Tentang Doa Diberi Kebaikan Dunia Akhirat**
+
+﴿ رَبَّنَآ ءَاتِنَا فِى ٱلدُّنْيَا حَسَنَةًۭ وَفِى ٱلْـَٔاخِرَةِ حَسَنَةًۭ وَقِنَا عَذَابَ ٱلنَّارِ ﴾
+*“Ya Tuhan kami, berilah kami kebaikan di dunia dan kebaikan di akhirat, serta peliharalah kami dari siksa neraka.”* (QS. Al-Baqarah: 201)
+
+---
+
+### 402. **Tentang Jangan Ikuti Langkah Syaitan**
+
+﴿ وَلَا تَتَّبِعُوا۟ خُطُوَٰتِ ٱلشَّيْطَـٰنِ ﴾
+*“Dan janganlah kamu mengikuti langkah-langkah syaitan.”* (QS. Al-Baqarah: 208)
+
+---
+
+### 403. **Tentang Perintah Adil**
+
+﴿ إِنَّ ٱللَّهَ يَأْمُرُ بِٱلْعَدْلِ وَٱلْإِحْسَـٰنِ ﴾
+*“Sesungguhnya Allah menyuruh berlaku adil dan berbuat kebajikan.”* (QS. An-Nahl: 90)
+
+---
+
+### 404. **Tentang Perintah Menepati Janji**
+
+﴿ وَأَوْفُوا۟ بِٱلْعَهْدِ إِنَّ ٱلْعَهْدَ كَانَ مَسْـُٔولًۭا ﴾
+*“Penuhilah janji, karena sesungguhnya janji itu pasti dimintai pertanggungjawaban.”* (QS. Al-Isra: 34)
+
+---
+
+### 405. **Tentang Larangan Bunuh Diri**
+
+﴿ وَلَا تَقْتُلُوٓا۟ أَنفُسَكُمْ ۗ إِنَّ ٱللَّهَ كَانَ بِكُمْ رَحِيمًۭا ﴾
+*“Dan janganlah kamu membunuh dirimu; sesungguhnya Allah Maha Penyayang kepadamu.”* (QS. An-Nisa: 29)
+
+---
+
+### 406. **Tentang Larangan Membunuh Anak**
+
+﴿ وَلَا تَقْتُلُوٓا۟ أَوْلَـٰدَكُم مِّنْ إِمْلَـٰقٍۢ ۖ نَّحْنُ نَرْزُقُكُمْ وَإِيَّاهُمْ ﴾
+*“Dan janganlah kamu membunuh anak-anakmu karena takut miskin; Kamilah yang memberi rezeki kepadamu dan mereka.”* (QS. Al-An’am: 151)
+
+---
+
+### 407. **Tentang Allah Penolong**
+
+﴿ نِعْمَ ٱلْمَوْلَىٰ وَنِعْمَ ٱلنَّصِيرُ ﴾
+*“Dia sebaik-baik Pelindung dan sebaik-baik Penolong.”* (QS. Al-Anfal: 40)
+
+---
+
+### 408. **Tentang Larangan Riba**
+
+﴿ يَـٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ لَا تَأْكُلُوا۟ ٱلرِّبَوٰا ﴾
+*“Wahai orang-orang yang beriman, janganlah kamu memakan riba.”* (QS. Ali Imran: 130)
+
+---
+
+### 409. **Tentang Shalat Menjauhkan dari Kejahatan**
+
+﴿ إِنَّ ٱلصَّلَوٰةَ تَنْهَىٰ عَنِ ٱلْفَحْشَآءِ وَٱلْمُنكَرِ ﴾
+*“Sesungguhnya shalat itu mencegah dari perbuatan keji dan mungkar.”* (QS. Al-Ankabut: 45)
+
+---
+
+### 410. **Tentang Zakat Menyucikan Jiwa**
+
+﴿ خُذْ مِنْ أَمْوَٰلِهِمْ صَدَقَةًۭ تُطَهِّرُهُمْ وَتُزَكِّيهِم بِهَا ﴾
+*“Ambillah zakat dari sebagian harta mereka, dengan zakat itu kamu membersihkan dan menyucikan mereka.”* (QS. At-Taubah: 103)
+
+---
+
+### 411. **Tentang Puasa**
+
+﴿ كُتِبَ عَلَيْكُمُ ٱلصِّيَامُ كَمَا كُتِبَ عَلَى ٱلَّذِينَ مِن قَبْلِكُمْ لَعَلَّكُمْ تَتَّقُونَ ﴾
+*“Diwajibkan atas kamu berpuasa sebagaimana diwajibkan atas orang sebelum kamu agar kamu bertakwa.”* (QS. Al-Baqarah: 183)
+
+---
+
+### 412. **Tentang Haji**
+
+﴿ وَلِلَّهِ عَلَى ٱلنَّاسِ حِجُّ ٱلْبَيْتِ مَنِ ٱسْتَطَـٰعَ إِلَيْهِ سَبِيلًۭا ﴾
+*“Mengerjakan haji adalah kewajiban manusia terhadap Allah, bagi siapa yang mampu mengadakan perjalanan ke Baitullah.”* (QS. Ali Imran: 97)
+
+---
+
+### 413. **Tentang Keutamaan Ikhlas**
+
+« إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ »
+*“Sesungguhnya amal itu tergantung niatnya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 414. **Tentang Menutup Aurat**
+
+﴿ قُل لِّلْمُؤْمِنَـٰتِ يَغْضُضْنَ مِنْ أَبْصَـٰرِهِنَّ وَيَحْفَظْنَ فُرُوجَهُنَّ وَلَا يُبْدِينَ زِينَتَهُنَّ ﴾
+*“Katakanlah kepada wanita yang beriman agar menahan pandangan mereka, menjaga kemaluan mereka, dan tidak menampakkan perhiasan mereka (aurat).”* (QS. An-Nur: 31)
+
+---
+
+### 415. **Tentang Menjaga Amanah**
+
+﴿ إِنَّ ٱللَّهَ يَأْمُرُكُمْ أَن تُؤَدُّوا۟ ٱلْأَمَـٰنَـٰتِ إِلَىٰٓ أَهْلِهَا ﴾
+*“Sesungguhnya Allah menyuruh kamu menyampaikan amanah kepada yang berhak menerimanya.”* (QS. An-Nisa: 58)
+
+---
+
+### 416. **Tentang Larangan Ghibah**
+
+﴿ وَلَا يَغْتَب بَّعْضُكُم بَعْضًا ﴾
+*“Dan janganlah sebagian kamu menggunjing sebagian yang lain.”* (QS. Al-Hujurat: 12)
+
+---
+
+### 417. **Tentang Larangan Su’udzon**
+
+﴿ ٱجْتَنِبُوا۟ كَثِيرًۭا مِّنَ ٱلظَّنِّ ﴾
+*“Jauhilah kebanyakan dari prasangka.”* (QS. Al-Hujurat: 12)
+
+---
+
+### 418. **Tentang Larangan Mabuk**
+
+﴿ إِنَّمَا ٱلْخَمْرُ وَٱلْمَيْسِرُ وَٱلْأَنصَابُ وَٱلْأَزْلَـٰمُ رِجْسٌۭ مِّنْ عَمَلِ ٱلشَّيْطَـٰنِ ﴾
+*“Sesungguhnya khamar, judi, berhala, dan undian panah adalah perbuatan keji termasuk perbuatan syaitan.”* (QS. Al-Maidah: 90)
+
+---
+
+### 419. **Tentang Jujur**
+
+« عَلَيْكُمْ بِالصِّدْقِ فَإِنَّ الصِّدْقَ يَهْدِي إِلَى الْبِرِّ »
+*“Hendaklah kalian berlaku jujur, karena kejujuran membawa kepada kebaikan.”* (HR. Bukhari & Muslim)
+
+---
+
+### 420. **Tentang Menepati Janji**
+
+« آيَةُ الْمُنَافِقِ ثَلاَثٌ... وَإِذَا وَعَدَ أَخْلَفَ »
+*“Tanda orang munafik ada tiga… jika berjanji ia ingkar.”* (HR. Bukhari & Muslim)
+
+---
+
+### 421. **Tentang Larangan Curang**
+
+﴿ وَيْلٌۭ لِّلْمُطَفِّفِينَ ﴾
+*“Celakalah bagi orang-orang yang curang.”* (QS. Al-Mutaffifin: 1)
+
+---
+
+### 422. **Tentang Menyegerakan Shalat**
+
+« أَحَبُّ الأَعْمَالِ إِلَى اللَّهِ الصَّلاَةُ عَلَى وَقْتِهَا »
+*“Amal yang paling dicintai Allah adalah shalat pada waktunya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 423. **Tentang Menolong Sesama**
+
+﴿ وَتَعَاوَنُوا۟ عَلَى ٱلْبِرِّ وَٱلتَّقْوَىٰ ﴾
+*“Dan tolong-menolonglah kamu dalam (mengerjakan) kebajikan dan takwa.”* (QS. Al-Maidah: 2)
+
+---
+
+### 424. **Tentang Persaudaraan Sesama Muslim**
+
+﴿ إِنَّمَا ٱلْمُؤْمِنُونَ إِخْوَةٌۭ ﴾
+*“Sesungguhnya orang-orang mukmin itu bersaudara.”* (QS. Al-Hujurat: 10)
+
+---
+
+### 425. **Tentang Larangan Dengki**
+
+« لاَ تَحَاسَدُوا »
+*“Janganlah kalian saling dengki.”* (HR. Muslim)
+
+---
+
+### 426. **Tentang Akhlak Mulia**
+
+« أَكْمَلُ الْمُؤْمِنِينَ إِيمَانًا أَحْسَنُهُمْ خُلُقًا »
+*“Orang mukmin yang paling sempurna imannya adalah yang paling baik akhlaknya.”* (HR. Tirmidzi)
+
+---
+
+### 427. **Tentang Rendah Hati**
+
+« مَا تَوَاضَعَ أَحَدٌ لِلَّهِ إِلاَّ رَفَعَهُ اللَّهُ »
+*“Tidaklah seseorang merendah karena Allah melainkan Allah akan meninggikannya.”* (HR. Muslim)
+
+---
+
+### 428. **Tentang Zalim**
+
+﴿ إِنَّ ٱللَّهَ لَا يُحِبُّ ٱلظَّـٰلِمِينَ ﴾
+*“Sesungguhnya Allah tidak menyukai orang-orang yang zalim.”* (QS. Ali Imran: 57)
+
+---
+
+### 429. **Tentang Balas Kebaikan dengan Kebaikan**
+
+﴿ وَإِذَا حُيِّيتُم بِتَحِيَّةٍ فَحَيُّوا۟ بِأَحْسَنَ مِنْهَا ﴾
+*“Apabila kamu diberi penghormatan, balaslah dengan penghormatan yang lebih baik.”* (QS. An-Nisa: 86)
+
+---
+
+### 430. **Tentang Cinta Rasul**
+
+« لاَ يُؤْمِنُ أَحَدُكُمْ حَتَّى أَكُونَ أَحَبَّ إِلَيْهِ مِنْ وَلَدِهِ وَوَالِدِهِ وَالنَّاسِ أَجْمَعِينَ »
+*“Tidaklah beriman salah seorang di antara kalian sampai aku lebih ia cintai daripada anaknya, orang tuanya, dan seluruh manusia.”* (HR. Bukhari & Muslim)
+
+---
+
+### 431. **Tentang Shalawat**
+
+﴿ إِنَّ ٱللَّهَ وَمَلَـٰٓئِكَتَهُۥ يُصَلُّونَ عَلَى ٱلنَّبِىِّ ۚ يَـٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ صَلُّوا۟ عَلَيْهِ وَسَلِّمُوا۟ تَسْلِيمًۭا ﴾
+*“Sesungguhnya Allah dan malaikat-malaikat-Nya bershalawat untuk Nabi. Wahai orang-orang yang beriman, bershalawatlah kamu untuk Nabi dan ucapkanlah salam dengan penuh penghormatan.”* (QS. Al-Ahzab: 56)
+
+---
+
+### 432. **Tentang Ikhlas dalam Amal**
+
+﴿ وَمَآ أُمِرُوٓا۟ إِلَّا لِيَعْبُدُوا۟ ٱللَّهَ مُخْلِصِينَ لَهُ ٱلدِّينَ ﴾
+*“Padahal mereka tidak diperintah kecuali supaya menyembah Allah dengan memurnikan ketaatan kepada-Nya.”* (QS. Al-Bayyinah: 5)
+
+---
+
+### 433. **Tentang Takut Neraka**
+
+﴿ فَأَنذَرْتُكُمْ نَارًۭا تَلَظَّىٰ ﴾
+*“Maka Aku memperingatkan kamu dengan neraka yang menyala-nyala.”* (QS. Al-Lail: 14)
+
+---
+
+### 434. **Tentang Berpegang Teguh pada Agama**
+
+﴿ فَٱسْتَقِمْ كَمَآ أُمِرْتَ ﴾
+*“Maka tetaplah kamu pada jalan yang benar sebagaimana diperintahkan kepadamu.”* (QS. Hud: 112)
+
+---
+
+### 435. **Tentang Larangan Putus Silaturahmi**
+
+« لاَ يَدْخُلُ الْجَنَّةَ قَاطِعٌ »
+*“Tidak akan masuk surga orang yang memutus silaturahmi.”* (HR. Bukhari & Muslim)
+
+---
+
+### 436. **Tentang Menuntut Ilmu**
+
+« مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ طَرِيقًا إِلَى الْجَنَّةِ »
+*“Barangsiapa menempuh jalan untuk mencari ilmu, Allah akan memudahkan baginya jalan menuju surga.”* (HR. Muslim)
+
+---
+
+### 437. **Tentang Keutamaan Menyebarkan Salam**
+
+« أَفْشُوا السَّلاَمَ بَيْنَكُمْ »
+*“Sebarkanlah salam di antara kalian.”* (HR. Muslim)
+
+---
+
+### 438. **Tentang Memaafkan**
+
+﴿ وَلْيَعْفُوا۟ وَلْيَصْفَحُوٓا۟ ﴾
+*“Hendaklah mereka memaafkan dan berlapang dada.”* (QS. An-Nur: 22)
+
+---
+
+### 439. **Tentang Allah Maha Dekat**
+
+﴿ وَإِذَا سَأَلَكَ عِبَادِى عَنِّى فَإِنِّى قَرِيبٌ ﴾
+*“Dan apabila hamba-hamba-Ku bertanya kepadamu tentang Aku, maka (jawablah) bahwa Aku adalah dekat.”* (QS. Al-Baqarah: 186)
+
+---
+
+### 440. **Tentang Doa Mustajab**
+
+« ثَلاَثُ دَعَوَاتٍ لاَ تُرَدُّ... »
+*“Tiga doa yang tidak tertolak: doa orang tua, doa orang berpuasa, doa orang yang dizalimi.”* (HR. Tirmidzi)
+
+---
+
+### 441. **Tentang Bersedekah Secara Rahasia**
+
+﴿ إِن تُبْدُوا۟ ٱلصَّدَقَـٰتِ فَنِعِمَّا هِىَ ۖ وَإِن تُخْفُوهَا وَتُؤْتُوهَا ٱلْفُقَرَآءَ فَهُوَ خَيْرٌۭ لَّكُمْ ﴾
+*“Jika kamu menampakkan sedekah, maka itu baik. Dan jika kamu menyembunyikannya dan memberikannya kepada orang-orang fakir, maka itu lebih baik bagimu.”* (QS. Al-Baqarah: 271)
+
+---
+
+### 442. **Tentang Allah Menolong Hamba yang Menolong Agama-Nya**
+
+﴿ يَـٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوٓا۟ إِن تَنصُرُوا۟ ٱللَّهَ يَنصُرْكُمْ ﴾
+*“Wahai orang-orang yang beriman, jika kamu menolong (agama) Allah, niscaya Dia akan menolongmu.”* (QS. Muhammad: 7)
+
+---
+
+### 443. **Tentang Harta Anak Ujian**
+
+﴿ إِنَّمَآ أَمْوَٰلُكُمْ وَأَوْلَـٰدُكُمْ فِتْنَةٌۭ ﴾
+*“Sesungguhnya hartamu dan anak-anakmu hanyalah cobaan (bagimu).”* (QS. At-Taghabun: 15-
+
+444. Tentang Harta dan Anak Tidak Bermanfaat
+
+﴿ يَوْمَ لَا يَنفَعُ مَالٌۭ وَلَا بَنُونَ ﴾
+“Pada hari harta dan anak-anak tidak berguna.” (QS. Asy-Syu’ara: 88)
+
+445. Tentang Dunia Sementara
+
+﴿ وَمَا ٱلْحَيَوٰةُ ٱلدُّنْيَآ إِلَّا مَتَـٰعُ ٱلْغُرُورِ ﴾
+“Dan kehidupan dunia tidak lain hanyalah kesenangan yang menipu.” (QS. Ali Imran: 185)
+
+446. Tentang Allah Memberi Rezeki
+
+﴿ وَمَا مِن دَآبَّةٍۢ فِى ٱلْأَرْضِ إِلَّا عَلَى ٱللَّهِ رِزْقُهَا ﴾
+“Dan tidak ada suatu makhluk melata pun di bumi melainkan Allah-lah yang memberi rezekinya.” (QS. Hud: 6)
+
+447. Tentang Kematian Pasti
+
+﴿ كُلُّ نَفْسٍۭ ذَآئِقَةُ ٱلْمَوْتِ ﴾
+“Setiap yang bernyawa pasti akan merasakan mati.” (QS. Ali Imran: 185)
+
+448. Tentang Surga Indah
+
+﴿ فِيهَا مَا تَشْتَهِيهِ ٱلْأَنفُسُ وَتَلَذُّ ٱلْأَعْيُنُ ﴾
+“Di dalam surga itu terdapat segala apa yang diinginkan oleh jiwa dan sedap dipandang mata.” (QS. Az-Zukhruf: 71)
+
+449. Tentang Azab Kubur
+
+« إِنَّ الْقَبْرَ أَوَّلُ مَنَازِلِ الآخِرَةِ »
+“Sesungguhnya kubur adalah awal dari tahapan akhirat.” (HR. Tirmidzi)
+
+450. Tentang Mimpi Baik
+
+« الرُّؤْيَا الصَّالِحَةُ مِنَ اللَّهِ »
+“Mimpi yang baik berasal dari Allah.” (HR. Bukhari & Muslim)
+
+451. Tentang Tidur Miring Kanan
+
+« إِذَا أَتَيْتَ مَضْجَعَكَ فَتَوَضَّأْ وُضُوءَكَ لِلصَّلاَةِ ثُمَّ اضْطَجِعْ عَلَى شِقِّكَ الأَيْمَنِ »
+“Jika engkau hendak tidur maka berwudhulah seperti wudhu untuk shalat kemudian berbaringlah di sisi kananmu.” (HR. Bukhari & Muslim)
+
+452. Tentang Menjaga Lisan
+
+« وَهَلْ يَكُبُّ النَّاسَ عَلَى وُجُوهِهِمْ فِي النَّارِ إِلاَّ حَصَائِدُ أَلْسِنَتِهِمْ »
+“Bukankah manusia akan dilemparkan ke neraka hanya karena hasil (ucapan) lisan mereka?” (HR. Tirmidzi)
+
+453. Tentang Larangan Sombong
+
+« لاَ يَدْخُلُ الْجَنَّةَ مَنْ كَانَ فِي قَلْبِهِ مِثْقَالُ ذَرَّةٍ مِنْ كِبْرٍ »
+“Tidak akan masuk surga orang yang di dalam hatinya terdapat seberat zarrah kesombongan.” (HR. Muslim)
+
+454. Tentang Larangan Boros
+
+﴿ إِنَّ ٱلْمُبَذِّرِينَ كَانُوٓا۟ إِخْوَٰنَ ٱلشَّيَـٰطِينِ ﴾
+“Sesungguhnya orang-orang yang boros itu adalah saudara syaitan.” (QS. Al-Isra: 27)
+
+455. Tentang Larangan Pelit
+
+﴿ وَلَا تَجْعَلْ يَدَكَ مَغْلُولَةً إِلَىٰ عُنُقِكَ ﴾
+“Dan janganlah engkau jadikan tanganmu terbelenggu pada lehermu (kikir).” (QS. Al-Isra: 29)
+
+456. Tentang Tawakal
+
+﴿ وَمَن يَتَوَكَّلْ عَلَى ٱللَّهِ فَهُوَ حَسْبُهُ ﴾
+“Barangsiapa bertawakal kepada Allah maka cukuplah Allah baginya.” (QS. At-Talaq: 3)
+
+457. Tentang Sabar
+
+﴿ إِنَّ ٱللَّهَ مَعَ ٱلصَّـٰبِرِينَ ﴾
+“Sesungguhnya Allah bersama orang-orang yang sabar.” (QS. Al-Baqarah: 153)
+
+458. Tentang Syukur
+
+﴿ وَسَيَجْزِى ٱللَّهُ ٱلشَّـٰكِرِينَ ﴾
+“Dan Allah akan memberi balasan kepada orang-orang yang bersyukur.” (QS. Ali Imran: 144)
+
+459. Tentang Doa Orang Tua
+
+﴿ رَّبِّ ٱرْحَمْهُمَا كَمَا رَبَّيَانِى صَغِيرًۭا ﴾
+“Ya Tuhanku, kasihilah keduanya sebagaimana mereka berdua mendidik aku waktu kecil.” (QS. Al-Isra: 24)
+
+460. Tentang Jangan Ikut Mayoritas Sesat
+
+﴿ وَإِن تُطِعْ أَكْثَرَ مَن فِى ٱلْأَرْضِ يُضِلُّوكَ عَن سَبِيلِ ٱللَّهِ ﴾
+“Jika kamu mengikuti kebanyakan orang di muka bumi, niscaya mereka akan menyesatkanmu dari jalan Allah.” (QS. Al-An’am: 116)
+
+461. Tentang Tidak Putus Asa dari Rahmat Allah
+
+﴿ لَا تَقْنَطُوا۟ مِن رَّحْمَةِ ٱللَّهِ ﴾
+“Janganlah kamu berputus asa dari rahmat Allah.” (QS. Az-Zumar: 53)
+
+462. Tentang Allah Maha Pengampun
+
+﴿ إِنَّ ٱللَّهَ غَفُورٌۭ رَّحِيمٌۭ ﴾
+“Sesungguhnya Allah Maha Pengampun lagi Maha Penyayang.” (QS. Al-Baqarah: 173)
+
+463. Tentang Allah Maha Mengetahui
+
+﴿ وَٱللَّهُ بِكُلِّ شَىْءٍ عَلِيمٌۭ ﴾
+“Dan Allah Maha Mengetahui segala sesuatu.” (QS. Al-Baqarah: 282)
+
+464. Tentang Allah Maha Mendengar
+
+﴿ إِنَّهُۥ هُوَ ٱلسَّمِيعُ ٱلْبَصِيرُ ﴾
+“Sesungguhnya Dia Maha Mendengar lagi Maha Melihat.” (QS. Al-Isra: 1)
+
+465. Tentang Allah Maha Kuasa
+
+﴿ إِنَّ ٱللَّهَ عَلَىٰ كُلِّ شَىْءٍۢ قَدِيرٌۭ ﴾
+“Sesungguhnya Allah Maha Kuasa atas segala sesuatu.” (QS. Al-Baqarah: 20)
+
+466. Tentang Allah Maha Kaya
+
+﴿ وَٱللَّهُ ٱلْغَنِىُّ وَأَنتُمُ ٱلْفُقَرَآءُ ﴾
+“Allah-lah yang Maha Kaya sedangkan kamulah yang fakir.” (QS. Muhammad: 38)
+
+467. Tentang Allah Tidak Lelah
+
+﴿ لَا تَأْخُذُهُۥ سِنَةٌۭ وَلَا نَوْمٌۭ ﴾
+“Tidak mengantuk dan tidak tidur bagi-Nya.” (Ayat Kursi – QS. Al-Baqarah: 255)
+
+468. Tentang Hari Kiamat
+
+﴿ يَوْمَ يَقُومُ ٱلنَّاسُ لِرَبِّ ٱلْعَـٰلَمِينَ ﴾
+“Pada hari ketika manusia berdiri menghadap Tuhan semesta alam.” (QS. Al-Mutaffifin: 6)
+
+469. Tentang Timbangan Amal
+
+﴿ فَمَن ثَقُلَتْ مَوَٰزِينُهُۥ فَأُو۟لَـٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ ﴾
+“Barangsiapa berat timbangan kebaikannya maka mereka itulah orang-orang yang beruntung.” (QS. Al-A’raf: 8)
+
+470. Tentang Hisab Mudah
+
+« مَنْ نُوقِشَ الْحِسَابَ عُذِّبَ »
+“Barangsiapa dihisab secara rinci, ia akan diazab.” (HR. Bukhari & Muslim)
+
+471. Tentang Syafaat Nabi
+
+« أَنَا سَيِّدُ وَلَدِ آدَمَ يَوْمَ الْقِيَامَةِ »
+“Aku adalah pemimpin anak Adam pada hari kiamat.” (HR. Muslim)
+
+472. Tentang Surga untuk Orang Beriman
+
+﴿ وَأُزْلِفَتِ ٱلْجَنَّةُ لِلْمُتَّقِينَ ﴾
+“Dan didekatkanlah surga kepada orang-orang yang bertakwa.” (QS. Asy-Syu’ara: 90)
+
+473. Tentang Neraka untuk Orang Kafir
+
+﴿ وَبُرِّزَتِ ٱلْجَحِيمُ لِلْغَـٰوِينَ ﴾
+“Dan diperlihatkan neraka Jahim kepada orang-orang yang sesat.” (QS. Asy-Syu’ara: 91)
+
+474. Tentang Nikmat Surga
+
+﴿ إِنَّ ٱلْمُتَّقِينَ فِى جَنَّـٰتٍۢ وَعُيُونٍۢ ﴾
+“Sesungguhnya orang-orang bertakwa berada di dalam taman-taman dan mata air.” (QS. Al-Hijr: 45)
+
+475. Tentang Sungai Surga
+
+﴿ فِيهَآ أَنْهَـٰرٌۭ مِّن مَّآءٍ غَيْرِ ءَاسِنٍۢ ﴾
+“Di dalamnya ada sungai-sungai dari air yang tidak berubah rasa dan baunya.” (QS. Muhammad: 15)
+
+476. Tentang Pakaian Ahli Surga
+
+﴿ يُحَلَّوْنَ فِيهَا مِنْ أَسَاوِرَ مِن ذَهَبٍۢ وَلُؤْلُؤًۭا وَ لِبَاسُهُمْ فِيهَا حَرِيرٌۭ ﴾
+“Di surga mereka dihiasi dengan gelang dari emas dan mutiara, dan pakaian mereka adalah sutra.” (QS. Al-Hajj: 23)
+
+477. Tentang Makanan Surga
+
+﴿ فَـٰكِهِينَ بِمَآ ءَاتَىٰهُمْ رَبُّهُمْ ﴾
+“Mereka bergembira dengan apa yang diberikan Tuhan kepada mereka.” (QS. Ar-Rum: 15)
+
+478. Tentang Salam Malaikat di Surga
+
+﴿ وَٱلْمَلَـٰٓئِكَةُ يَدْخُلُونَ عَلَيْهِم مِّن كُلِّ بَابٍۢ * سَلَـٰمٌ عَلَيْكُم ﴾
+“Malaikat masuk kepada mereka dari semua pintu seraya mengucapkan: ‘Salam sejahtera atas kalian.’” (QS. Ar-Ra’d: 23–24)
+
+479. Tentang Cahaya Orang Beriman
+
+﴿ يَسْعَىٰ نُورُهُم بَيْنَ أَيْدِيهِمْ وَبِأَيْمَـٰنِهِم ﴾
+“Cahaya mereka memancar di hadapan dan di sebelah kanan mereka.” (QS. At-Tahrim: 8)
+
+480. Tentang Wajah Berseri di Surga
+
+﴿ وُجُوهٌۭ يَوْمَئِذٍۢ نَّاعِمَةٌ ﴾
+“Wajah-wajah pada hari itu berseri-seri penuh kenikmatan.” (QS. Al-Ghasyiyah: 8)
+
+481. Tentang Wajah Muram di Neraka
+
+﴿ وَوُجُوهٌۭ يَوْمَئِذٍ عَلَيْهَا غَبَرَةٌ ﴾
+“Dan wajah-wajah pada hari itu penuh debu dan kegelapan.” (QS. Abasa: 40)
+
+482. Tentang Neraka Menyala
+
+﴿ كَلَّآ إِنَّهَا لَظَىٰ ﴾
+“Sekali-kali tidak, sesungguhnya neraka itu adalah api yang menyala-nyala.” (QS. Al-Ma’arij: 15)
+
+483. Tentang Minuman Neraka
+
+﴿ وَسُقُوا۟ مَآءً حَمِيمًۭا فَقَطَّعَ أَمْعَآءَهُمْ ﴾
+“Mereka diberi minum dengan air yang mendidih sehingga memotong ususnya.” (QS. Muhammad: 15)
+
+484. Tentang Penjaga Neraka
+
+﴿ عَلَيْهَا تِسْعَةَ عَشَرَ ﴾
+“Di atasnya ada sembilan belas (malaikat penjaga).” (QS. Al-Muddatsir: 30)
+
+485. Tentang Neraka Sangat Dalam
+
+« لَوْ أُلْقِيَ فِيهَا حَجَرٌ لَهَوَى سَبْعِينَ خَرِيفًا »
+“Jika dilemparkan sebuah batu ke neraka, niscaya ia jatuh selama tujuh puluh tahun sebelum sampai ke dasar.” (HR. Muslim)
+
+486. Tentang Neraka Diseret di Hari Kiamat
+
+« يُؤْتَى بِجَهَنَّمَ يَوْمَئِذٍ لَهَا سَبْعُونَ أَلْفَ زِمَامٍ »
+“Neraka Jahanam didatangkan pada hari itu dengan tujuh puluh ribu tali kendali.” (HR. Muslim)
+
+487. Tentang Azab Neraka Sangat Keras
+
+﴿ فَذُوقُوا۟ فَلَن نَّزِيدَكُمْ إِلَّا عَذَابًۭا ﴾
+“Maka rasakanlah, tidak akan Kami tambah bagimu kecuali azab.” (QS. An-Naba: 30)
+
+488. Tentang Perlindungan dari Neraka
+
+« اللَّهُمَّ أَجِرْنَا مِنَ النَّارِ »
+“Ya Allah, lindungilah kami dari api neraka.” (Doa Nabi)
+
+489. Tentang Perlindungan dari Siksa Kubur
+
+« اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ عَذَابِ الْقَبْرِ »
+“Ya Allah, aku berlindung kepada-Mu dari siksa kubur.” (HR. Bukhari & Muslim)
+
+490. Tentang Perlindungan dari Dajjal
+
+« اللَّهُمَّ إِنِّي أَعُوذُ بِكَ مِنْ فِتْنَةِ الْمَسِيحِ الدَّجَّالِ »
+“Ya Allah, aku berlindung kepada-Mu dari fitnah Al-Masih Ad-Dajjal.” (HR. Muslim)
+
+491. Tentang Fitnah Dunia
+
+﴿ وَٱعْلَمُوٓا۟ أَنَّمَآ أَمْوَٰلُكُمْ وَأَوْلَـٰدُكُمْ فِتْنَةٌۭ ﴾
+“Ketahuilah bahwa hartamu dan anak-anakmu hanyalah cobaan.” (QS. Al-Anfal: 28)
+
+492. Tentang Kebaikan Dibalas
+
+﴿ مَّن جَآءَ بِٱلْحَسَنَةِ فَلَهُۥ عَشْرُ أَمْثَـٰلِهَا ﴾
+“Barangsiapa membawa kebaikan maka baginya sepuluh kali lipat balasannya.” (QS. Al-An’am: 160)
+
+493. Tentang Amal Tidak Sia-sia
+
+﴿ إِنَّ ٱللَّهَ لَا يُضِيعُ أَجْرَ ٱلْمُحْسِنِينَ ﴾
+“Sesungguhnya Allah tidak menyia-nyiakan pahala orang-orang yang berbuat baik.” (QS. Yusuf: 56)
+
+494 Penciptaan Langit dan Bumi
+
+📖 QS. Al-Anbiya [21]: 30
+
+Arab:
+أَوَلَمْ يَرَ ٱلَّذِينَ كَفَرُوٓا۟ أَنَّ ٱلسَّمَـٰوَٟتِ وَٱلۡأَرۡضَ كَانَتَا رَتۡقٗا فَفَتَقۡنَـٰهُمَاۖ وَجَعَلۡنَا مِنَ ٱلۡمَآءِ كُلَّ شَيۡءٍ حَيٍّۖ أَفَلَا يُؤۡمِنُونَ
+
+Artinya:
+“Dan apakah orang-orang kafir tidak mengetahui bahwa langit dan bumi itu keduanya dahulu adalah sesuatu yang padu, kemudian Kami pisahkan keduanya. Dan dari air Kami jadikan segala sesuatu yang hidup. Maka mengapa mereka tidak juga beriman?”
+
+495 Pergantian Siang dan Malam
+
+📖 QS. Ali Imran [3]: 190
+
+Arab:
+إِنَّ فِي خَلۡقِ ٱلسَّمَـٰوَٟتِ وَٱلۡأَرۡضِ وَٱخۡتِلَـٰفِ ٱلَّيۡلِ وَٱلنَّهَارِ لَأٓيَـٰتٖ لِّأُوْلِي ٱلۡأَلۡبَـٰبِ
+
+Artinya:
+“Sesungguhnya dalam penciptaan langit dan bumi, dan silih bergantinya malam dan siang terdapat tanda-tanda bagi orang-orang yang berakal.”
+
+496 Penciptaan Gunung dan Bumi
+
+📖 QS. An-Naba [78]: 6-7
+
+Arab:
+أَلَمْ نَجْعَلِ ٱلۡأَرْضَ مِهَـٰدٗا ۝ وَٱلۡجِبَالَ أَوْتَادٗا
+
+Artinya:
+“Bukankah Kami telah menjadikan bumi itu sebagai hamparan, dan gunung-gunung sebagai pasak?”
+
+497 Penundukan Alam untuk Manusia
+
+📖 QS. Al-Jatsiyah [45]: 13
+
+Arab:
+وَسَخَّرَ لَكُم مَّا فِي ٱلسَّمَـٰوَٟتِ وَمَا فِي ٱلۡأَرۡضِ جَمِيعٗا مِّنْهُۚ إِنَّ فِي ذَٰلِكَ لَأٓيَـٰتٖ لِّقَوۡمٖ يَتَفَكَّرُونَ
+
+Artinya:
+“Dan Dia telah menundukkan untukmu apa yang di langit dan apa yang di bumi semuanya, sebagai rahmat dari-Nya. Sesungguhnya pada yang demikian itu benar-benar terdapat tanda-tanda bagi kaum yang berpikir.”
+
+498 Malaikat Selalu Taat kepada Allah
+
+QS. At-Tahrim [66]: 6
+
+لَا يَعْصُونَ ٱللَّهَ مَآ أَمَرَهُمْ وَيَفْعَلُونَ مَا يُؤْمَرُونَ
+Artinya: “Mereka (para malaikat) tidak mendurhakai Allah terhadap apa yang diperintahkan-Nya kepada mereka, dan selalu mengerjakan apa yang diperintahkan.”
+
+499 Malaikat Jibril Menyampaikan Wahyu
+
+QS. Asy-Syu‘ara [26]: 193-194
+
+نَزَلَ بِهِ ٱلرُّوحُ ٱلۡأَمِينُ ۝ عَلَىٰ قَلۡبِكَ لِتَكُونَ مِنَ ٱلۡمُنذِرِينَ
+Artinya: “Ruhul Amin (Jibril) menurunkan wahyu ke dalam hatimu (Muhammad), agar engkau menjadi salah seorang yang memberi peringatan.”
+
+500 Malaikat Mikail Mengatur Rezeki
+
+QS. Az-Zukhruf [43]: 11 (dalil umum pengaturan rezeki dan hujan)
+
+وَٱلَّذِي نَزَّلَ مِنَ ٱلسَّمَآءِ مَآءًۢ بِقَدَرٖ فَأَنشَرۡنَا بِهِۦ بَلۡدَةٗ مَّيۡتٗاۚ
+Artinya: “Dan yang menurunkan air dari langit menurut ukuran, lalu Kami hidupkan dengan air itu negeri yang mati.”
+(tugas Mikail: mengatur hujan dan rezeki makhluk)
+
+501 Malaikat Israfil Meniup Sangkakala
+
+QS. Az-Zumar [39]: 68
+
+وَنُفِخَ فِي ٱلصُّورِ فَصَعِقَ مَن فِي ٱلسَّمَـٰوَٟتِ وَمَن فِي ٱلۡأَرۡضِ
+Artinya: “Dan ditiuplah sangkakala, maka matilah siapa yang di langit dan di bumi kecuali yang Allah kehendaki.”
+
+502 Malaikat Izrail Mencabut Nyawa
+
+QS. As-Sajdah [32]: 11
+
+قُلۡ يَتَوَفَّىٰكُم مَّلَكُ ٱلۡمَوۡتِ ٱلَّذِي وُكِّلَ بِكُمۡ ثُمَّ إِلَىٰ رَبِّكُمۡ تُرۡجَعُونَ
+Artinya: “Katakanlah: Malaikat maut yang diserahi untuk (mencabut nyawa)mu akan mematikanmu, kemudian hanya kepada Tuhanmulah kamu akan dikembalikan.”
+
+503 Malaikat Raqib dan Atid (Pencatat Amal)
+
+QS. Qaf [50]: 17-18
+
+إِذۡ يَتَلَقَّى ٱلۡمُتَلَقِّيَانِ عَنِ ٱلۡيَمِينِ وَعَنِ ٱلشِّمَالِ قَعِيدٞ ۝ مَّا يَلۡفِظُ مِن قَوۡلٍ إِلَّا لَدَيۡهِ رَقِيبٌ عَتِيدٞ
+Artinya: “Ketika dua malaikat mencatat amal perbuatannya, yang satu di sebelah kanan dan yang lain di sebelah kiri. Tiada suatu ucapan pun yang diucapkannya melainkan ada di dekatnya malaikat pengawas yang selalu hadir.”
+
+504 Malaikat Malik (Penjaga Neraka)
+
+QS. Az-Zukhruf [43]: 77
+
+وَنَادَوۡاْ يَـٰمَـٰلِكُ لِيَقۡضِ عَلَيۡنَا رَبُّكَۖ قَالَ إِنَّكُم مَّـٰكِثُونَ
+Artinya: “Dan mereka berseru: ‘Hai Malik biarlah Tuhanmu membunuh kami saja’. Dia menjawab: ‘Sesungguhnya kamu akan tetap tinggal (di neraka ini)’.”
+
+505 Malaikat Ridwan (Penjaga Surga)
+
+QS. Az-Zumar [39]: 73
+
+وَسِيقَ ٱلَّذِينَ ٱتَّقَوۡاْ رَبَّهُمۡ إِلَى ٱلۡجَنَّةِ زُمَرًاۖ حَتَّىٰٓ إِذَا جَآءُوهَا وَفُتِحَتۡ أَبۡوَٟبُهَا وَقَالَ لَهُمۡ خَزَنَتُهَا سَلَـٰمٌ عَلَيۡكُمۡ
+Artinya: “Dan orang-orang yang bertakwa kepada Tuhannya dibawa ke dalam surga secara berombongan, sehingga apabila mereka sampai ke surga itu sedang pintu-pintunya telah dibukakan dan para penjaga surga berkata: ‘Kesejahteraan atasmu…’”
+
+506 Malaikat Munkar dan Nakir (Menanyai di Kubur)
+
+Hadis Riwayat Tirmidzi
+
+“Apabila seorang hamba telah dikuburkan, maka datang kepadanya dua malaikat hitam kebiruan, yang satu bernama Munkar dan yang lain Nakir…”
+
+506 Malaikat Penjaga Manusia (Malaikat Hafazhah)
+
+QS. Ar-Ra‘d [13]: 11
+
+لَهُۥ مُعَقِّبَـٰتٞ مِّنۢ بَيۡنِ يَدَيۡهِ وَمِنۡ خَلۡفِهِ يَحۡفَظُونَهُۥ مِنۡ أَمۡرِ ٱللَّهِۗ
+Artinya: “Baginya (manusia) ada malaikat-malaikat yang selalu menjaganya bergiliran, dari depan dan belakangnya, mereka menjaganya atas perintah Allah.”
+
+507 Malaikat Pembawa Arsy
+
+QS. Al-Haqqah [69]: 17
+
+وَيَحۡمِلُ عَرۡشَ رَبِّكَ فَوۡقَهُمۡ يَوۡمَئِذٖ ثَمَـٰنِيَةٞ
+Artinya: “Dan malaikat-malaikat berada di penjuru-penjuru langit. Pada hari itu delapan malaikat menjunjung ‘Arsy Tuhanmu di atas (kepala) mereka.”
+
+508 Malaikat yang Mendoakan Orang Beriman
+
+QS. Al-Mu’min [40]: 7
+
+ٱلَّذِينَ يَحۡمِلُونَ ٱلۡعَرۡشَ وَمَنۡ حَوۡلَهُۥ يُسَبِّحُونَ بِحَمۡدِ رَبِّهِمۡ… وَيَسۡتَغۡفِرُونَ لِلَّذِينَ ءَامَنُواْ
+Artinya: “Malaikat yang memikul Arsy dan malaikat yang berada di sekelilingnya bertasbih memuji Tuhannya dan memohonkan ampunan bagi orang-orang yang beriman.”
+
+509 Malaikat yang Membawa Kabar Gembira
+
+QS. Fussilat [41]: 30-31
+
+إِنَّ ٱلَّذِينَ قَالُواْ رَبُّنَا ٱللَّهُ ثُمَّ ٱسۡتَقَـٰمُواْ تَتَنَزَّلُ عَلَيۡهِمُ ٱلۡمَلَـٰٓئِكَةُ أَلَّا تَخَافُواْ وَلَا تَحۡزَنُواْ وَأَبۡشِرُواْ بِٱلۡجَنَّةِ ٱلَّتِي كُنتُمۡ تُوعَدُونَ
+Artinya: “Sesungguhnya orang-orang yang mengatakan: ‘Tuhan kami ialah Allah’, kemudian mereka meneguhkan pendirian mereka, maka malaikat akan turun kepada mereka (seraya berkata): ‘Janganlah kamu takut dan janganlah kamu bersedih hati; dan bergembiralah dengan surga yang telah dijanjikan kepadamu’.”
+
+510 Malaikat Turun Saat Perang Badar
+
+QS. Al-Anfal [8]: 9
+
+إِذۡ تَسۡتَغِيثُونَ رَبَّكُمۡ فَٱسۡتَجَابَ لَكُمۡ أَنِّي مُمِدُّكُم بِأَلۡفٖ مِّنَ ٱلۡمَلَـٰٓئِكَةِ مُرۡدِفِينَ
+Artinya: “(Ingatlah) ketika kamu memohon pertolongan kepada Tuhanmu, lalu Dia mengabulkan permohonanmu: ‘Sesungguhnya Aku akan mendatangkan bala bantuan kepadamu dengan seribu malaikat yang datang berturut-turut.’”
+
+511 Doa Nabi Adam & Hawa (Tobat)
+
+QS. Al-A‘raf [7]: 23
+
+قَالَا رَبَّنَا ظَلَمۡنَآ أَنفُسَنَاۖ وَإِن لَّمۡ تَغۡفِرۡ لَنَا وَتَرۡحَمۡنَا لَنَكُونَنَّ مِنَ ٱلۡخَـٰسِرِينَ
+Artinya: “Keduanya berkata: ‘Ya Tuhan kami, kami telah menzalimi diri kami sendiri, dan jika Engkau tidak mengampuni kami dan memberi rahmat kepada kami, niscaya kami termasuk orang-orang yang rugi’.”
+
+512 Doa Nabi Nuh
+
+QS. Hud [11]: 47
+
+رَبِّ إِنِّيٓ أَعُوذُ بِكَ أَنْ أَسْأَلَكَ مَا لَيْسَ لِي بِهِۦ عِلْمٞۖ وَإِلَّا تَغْفِرْ لِي وَتَرْحَمْنِيٓ أَكُن مِّنَ ٱلۡخَـٰسِرِينَ
+Artinya: “Ya Tuhanku, sesungguhnya aku berlindung kepada-Mu untuk memohon kepada-Mu sesuatu yang aku tidak mengetahui (hakikatnya). Jika Engkau tidak mengampuni aku dan memberi rahmat kepadaku, niscaya aku termasuk orang-orang yang merugi.”
+
+513 Doa Nabi Ibrahim
+
+QS. Ibrahim [14]: 40-41
+
+رَبِّ ٱجۡعَلۡنِي مُقِيمَ ٱلصَّلَوٰةِ وَمِن ذُرِّيَّتِيۚ رَبَّنَا وَتَقَبَّلۡ دُعَآءِ ۝ رَبَّنَا ٱغۡفِرۡ لِي وَلِوَٟلِدَيَّ وَلِلۡمُؤۡمِنِينَ يَوۡمَ يَقُومُ ٱلۡحِسَابُ
+Artinya: “Ya Tuhanku, jadikanlah aku orang yang tetap mendirikan salat, demikian juga anak cucuku. Ya Tuhan kami, perkenankanlah doaku. Ya Tuhan kami, ampunilah aku, kedua orang tuaku, dan orang-orang mukmin pada hari terjadinya hisab.”
+
+514 Doa Nabi Yunus (Dzun Nun)
+
+QS. Al-Anbiya [21]: 87
+
+لَّآ إِلَـٰهَ إِلَّآ أَنتَ سُبْحَـٰنَكَ إِنِّي كُنتُ مِنَ ٱلظَّـٰلِمِينَ
+Artinya: “Tidak ada Tuhan selain Engkau, Maha Suci Engkau, sesungguhnya aku adalah termasuk orang-orang yang zalim.”
+
+515 Doa Nabi Musa
+
+QS. Taha [20]: 25-28
+
+رَبِّ ٱشۡرَحۡ لِي صَدۡرِي ۝ وَيَسِّرۡ لِيٓ أَمۡرِي ۝ وَٱحۡلُلۡ عُقۡدَةٗ مِّن لِّسَانِي ۝ يَفۡقَهُواْ قَوۡلِي
+Artinya: “Ya Tuhanku, lapangkanlah dadaku untukku. Mudahkanlah untukku urusanku. Lepaskanlah kekakuan dari lidahku, agar mereka mengerti perkataanku.”
+
+516 Doa Nabi Zakaria
+
+QS. Maryam [19]: 4-6
+
+رَبِّ إِنِّي وَهَنَ ٱلۡعَظۡمُ مِنِّي وَٱشۡتَعَلَ ٱلرَّأۡسُ شَيۡبٗا… وَإِنِّي خِفۡتُ ٱلۡمَوَٟلِيَ مِن وَرَآءِي وَكَانَتِ ٱمْرَأَتِي عَاقِرٗا فَهَبۡ لِي مِن لَّدُنكَ وَلِيّٗا ۝ يَرِثُنِي وَيَرِثُ مِنۡ ءَالِ يَعْقُوبَۖ وَٱجۡعَلۡهُ رَبِّ رَضِيّٗا
+Artinya: “Ya Tuhanku, sesungguhnya tulangku telah lemah dan kepalaku dipenuhi uban, dan aku belum pernah kecewa dalam berdoa kepada-Mu. Sesungguhnya aku khawatir terhadap kerabatku sepeninggalku, sedang istriku seorang yang mandul, maka anugerahkanlah kepadaku dari sisi-Mu seorang putra, yang akan mewarisi aku dan mewarisi sebagian keluarga Ya‘qub; dan jadikanlah dia, ya Tuhanku, seorang yang diridai.”
+
+
+## 📖 Dalil 516–567
+
+
+### 517. **Amalan yang Dicintai Allah**
+
+« أَحَبُّ الْأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا وَإِنْ قَلَّ »
+*“Amalan yang paling dicintai Allah adalah yang terus-menerus meski sedikit.”* (HR. Bukhari & Muslim)
+
+---
+
+### 518. **Doa Nabi Musa**
+
+﴿ رَبِّ ٱشۡرَحۡ لِي صَدۡرِي ﴾
+*“Ya Tuhanku, lapangkanlah untukku dadaku.”* (QS. Taha: 25)
+
+---
+
+### 519. **Shalat Mencegah Perbuatan Keji**
+
+﴿ إِنَّ ٱلصَّلَوٰةَ تَنْهَىٰ عَنِ ٱلۡفَحۡشَآءِ وَٱلۡمُنكَرِ ﴾
+*“Sesungguhnya shalat itu mencegah dari perbuatan keji dan mungkar.”* (QS. Al-Ankabut: 45)
+
+---
+
+### 520. **Allah Tidak Lalai dari Amal Manusia**
+
+﴿ وَمَا رَبُّكَ بِغَافِلٍ عَمَّا تَعۡمَلُونَ ﴾
+*“Tuhanmu tidaklah lengah dari apa yang kamu kerjakan.”* (QS. Hud: 123)
+
+---
+
+### 521. **Berdoa dengan Asmaul Husna**
+
+﴿ وَلِلَّهِ ٱلۡأَسۡمَآءُ ٱلۡحُسۡنَىٰ فَٱدۡعُوهُ بِهَا ﴾
+*“Milik Allah-lah nama-nama yang indah, maka berdoalah kepada-Nya dengan nama-nama itu.”* (QS. Al-A’raf: 180)
+
+---
+
+### 522. **Allah Tidak Membebani di Luar Kemampuan**
+
+﴿ لَا يُكَلِّفُ ٱللَّهُ نَفۡسًا إِلَّا وُسۡعَهَا ﴾
+*“Allah tidak membebani seseorang melainkan sesuai dengan kesanggupannya.”* (QS. Al-Baqarah: 286)
+
+---
+
+### 523. **Larangan Putus Asa dari Rahmat Allah**
+
+﴿ لَا تَقۡنَطُوا۟ مِن رَّحۡمَةِ ٱللَّهِۚ إِنَّ ٱللَّهَ يَغۡفِرُ ٱلذُّنُوبَ جَمِيعًا ﴾
+*“Janganlah kamu berputus asa dari rahmat Allah. Sesungguhnya Allah mengampuni dosa-dosa semuanya.”* (QS. Az-Zumar: 53)
+
+---
+
+### 524. **Allah Mengetahui Segala yang Tersembunyi**
+
+﴿ إِنَّ ٱللَّهَ يَعۡلَمُ غَيۡبَ ٱلسَّمَـٰوَٟتِ وَٱلۡأَرۡضِ ﴾
+*“Sesungguhnya Allah mengetahui apa yang tersembunyi di langit dan bumi.”* (QS. Al-Fath: 18)
+
+---
+
+### 525. **Allah Maha Pengampun Lagi Penyayang**
+
+﴿ إِنَّ ٱللَّهَ غَفُورٞ رَّحِيمٞ ﴾
+*“Sesungguhnya Allah Maha Pengampun lagi Maha Penyayang.”* (QS. An-Nisa: 23)
+
+---
+
+### 526. **Larangan Berkhianat**
+
+﴿ يَـٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ لَا تَخُونُوا۟ ٱللَّهَ وَٱلرَّسُولَ وَتَخُونُوٓا۟ أَمَـٰنَـٰتِكُمۡ ﴾
+*“Wahai orang-orang yang beriman, janganlah kamu mengkhianati Allah dan Rasul dan janganlah mengkhianati amanat-amanatmu.”* (QS. Al-Anfal: 27)
+
+---
+
+### 527. **Keutamaan Menolong Sesama**
+
+« مَنْ نَفَّسَ عَنْ مُؤْمِنٍ كُرْبَةً … نَفَّسَ اللَّهُ عَنْهُ كُرْبَةً مِنْ كُرَبِ يَوْمِ الْقِيَامَةِ »
+*“Barangsiapa melepaskan satu kesusahan seorang mukmin, Allah akan melepaskan darinya satu kesusahan pada hari kiamat.”* (HR. Muslim)
+
+---
+
+### 528. **Larangan Mengolok-olok Sesama**
+
+﴿ يَـٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ لَا يَسۡخَرۡ قَوۡمٞ مِّن قَوۡمٍ ﴾
+*“Wahai orang-orang beriman, janganlah suatu kaum mengolok-olok kaum yang lain.”* (QS. Al-Hujurat: 11)
+
+---
+
+### 529. **Allah Maha Mendengar Doa**
+
+﴿ إِنَّهُۥ سَمِيعٞ قَرِيبٞ ﴾
+*“Sesungguhnya Dia Maha Mendengar lagi Maha Dekat.”* (QS. Saba: 50)
+
+---
+
+### 530. **Doa Nabi Yunus**
+
+﴿ لَّآ إِلَـٰهَ إِلَّآ أَنتَ سُبْحَـٰنَكَ إِنِّي كُنتُ مِنَ ٱلظَّـٰلِمِينَ ﴾
+*“Tidak ada Tuhan selain Engkau, Maha Suci Engkau. Sesungguhnya aku termasuk orang yang zalim.”* (QS. Al-Anbiya: 87)
+
+---
+
+### 531. **Doa Nabi Zakaria**
+
+﴿ رَبِّ لَا تَذَرۡنِي فَرۡدٗا وَأَنتَ خَيۡرُ ٱلۡوَٟرِثِينَ ﴾
+*“Ya Tuhanku, janganlah Engkau membiarkan aku hidup seorang diri, Engkaulah sebaik-baik yang mewarisi.”* (QS. Al-Anbiya: 89)
+
+---
+
+### 532. **Doa Nabi Ibrahim**
+
+﴿ رَبِّ ٱجۡعَلۡنِي مُقِيمَ ٱلصَّلَوٰةِ وَمِن ذُرِّيَّتِي ﴾
+*“Ya Tuhanku, jadikanlah aku orang yang mendirikan shalat, demikian pula keturunanku.”* (QS. Ibrahim: 40)
+
+---
+
+### 533. **Allah Tidak Menzalimi Hamba-Nya**
+
+﴿ وَمَا رَبُّكَ بِظَلَّـٰمٖ لِّلۡعَبِيدِ ﴾
+*“Dan Tuhanmu sekali-kali tidak menzalimi hamba-hamba-Nya.”* (QS. Fussilat: 46)
+
+---
+
+### 534. **Allah Maha Kuasa atas Segala Sesuatu**
+
+﴿ إِنَّ ٱللَّهَ عَلَىٰ كُلِّ شَيۡءٖ قَدِيرٞ ﴾
+*“Sesungguhnya Allah Maha Kuasa atas segala sesuatu.”* (QS. Al-Baqarah: 20)
+
+---
+
+### 535. **Larangan Ghibah**
+
+﴿ وَلَا يَغۡتَب بَّعۡضُكُم بَعۡضًا ﴾
+*“Janganlah sebagian kalian menggunjing sebagian yang lain.”* (QS. Al-Hujurat: 12)
+
+---
+
+### 536. **Kebaikan Akan Dibalas**
+
+﴿ هَلۡ جَزَآءُ ٱلۡإِحۡسَـٰنِ إِلَّا ٱلۡإِحۡسَـٰنُ ﴾
+*“Tidak ada balasan kebaikan kecuali kebaikan pula.”* (QS. Ar-Rahman: 60)
+
+---
+
+### 537. **Allah Menyukai Orang yang Bertawakal**
+
+﴿ إِنَّ ٱللَّهَ يُحِبُّ ٱلۡمُتَوَكِّلِينَ ﴾
+*“Sesungguhnya Allah menyukai orang-orang yang bertawakal.”* (QS. Ali Imran: 159)
+
+---
+
+### 538. **Allah Mengetahui Segala Sesuatu**
+
+﴿ وَٱللَّهُ بِكُلِّ شَيۡءٍ عَلِيمٞ ﴾
+*“Allah Maha Mengetahui segala sesuatu.”* (QS. Al-Hujurat: 16)
+
+---
+
+### 539. **Larangan Riya’**
+
+« مَنْ سَمَّعَ سَمَّعَ اللَّهُ بِهِ، وَمَنْ يُرَائِي يُرَائِي اللَّهُ بِهِ »
+*“Barangsiapa berbuat riya, Allah akan menyingkapkan riya’nya; barangsiapa ingin dipuji, Allah akan memperlihatkan niatnya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 540. **Keutamaan Membaca Al-Qur’an**
+
+« خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ »
+*“Sebaik-baik kalian adalah yang belajar Al-Qur’an dan mengajarkannya.”* (HR. Bukhari)
+
+---
+
+### 541. **Allah Memberi Pertolongan kepada Orang Beriman**
+
+﴿ وَكَانَ حَقًّا عَلَيۡنَا نَصۡرُ ٱلۡمُؤۡمِنِينَ ﴾
+*“Sudah menjadi kewajiban Kami untuk menolong orang-orang yang beriman.”* (QS. Ar-Rum: 47)
+
+---
+
+### 542. **Allah Menyukai Orang yang Sabar**
+
+﴿ وَٱللَّهُ يُحِبُّ ٱلصَّـٰبِرِينَ ﴾
+*“Allah menyukai orang-orang yang sabar.”* (QS. Ali Imran: 146)
+
+---
+
+### 543. **Doa Nabi Yusuf**
+
+﴿ تَوَفَّنِي مُسۡلِمٗا وَأَلۡحِقۡنِي بِٱلصَّـٰلِحِينَ ﴾
+*“Wafatkanlah aku dalam keadaan muslim dan gabungkanlah aku bersama orang-orang yang saleh.”* (QS. Yusuf: 101)
+
+---
+
+### 544. **Allah Maha Mendengar Lagi Maha Mengetahui**
+
+﴿ إِنَّهُۥ كَانَ سَمِيعَۢا بَصِيرٗا ﴾
+*“Sesungguhnya Dia adalah Maha Mendengar lagi Maha Melihat.”* (QS. Al-Isra: 1)
+
+---
+
+### 545. **Larangan Membunuh Jiwa Tanpa Hak**
+
+﴿ وَلَا تَقۡتُلُواْ ٱلنَّفۡسَ ٱلَّتِي حَرَّمَ ٱللَّهُ إِلَّا بِٱلۡحَقِّ ﴾
+*“Janganlah kamu membunuh jiwa yang diharamkan Allah, kecuali dengan alasan yang benar.”* (QS. Al-Isra: 33)
+
+---
+
+### 546. **Keutamaan Menuntut Ilmu**
+
+« مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ »
+*“Barangsiapa menempuh jalan untuk mencari ilmu, Allah mudahkan baginya jalan menuju surga.”* (HR. Muslim)
+
+---
+
+### 547. **Doa Nabi Sulaiman**
+
+﴿ رَبِّ أَوۡزِعۡنِيٓ أَنْ أَشْكُرَ نِعْمَتَكَ ﴾
+*“Ya Tuhanku, berilah aku ilham agar tetap mensyukuri nikmat-Mu.”* (QS. An-Naml: 19)
+
+---
+
+### 548. **Allah Mengetahui Segala yang Tersembunyi**
+
+﴿ يَعۡلَمُ مَا فِي ٱلسَّمَـٰوَٟتِ وَٱلۡأَرۡضِ وَيَعۡلَمُ مَا تُسِرُّونَ وَمَا تُعۡلِنُونَ ﴾
+*“Dia mengetahui apa yang ada di langit dan di bumi, mengetahui apa yang kamu rahasiakan dan yang kamu nyatakan.”* (QS. At-Taghabun: 4)
+
+---
+
+### 549. **Allah Maha Penerima Tobat**
+
+﴿ وَهُوَ ٱلَّذِي يَقۡبَلُ ٱلتَّوۡبَةَ عَنْ عِبَادِهِۦ ﴾
+*“Dan Dialah yang menerima tobat dari hamba-hamba-Nya.”* (QS. Asy-Syura: 25)
+
+---
+
+### 550. **Keutamaan Mengasihi Sesama**
+
+« الرَّاحِمُونَ يَرْحَمُهُمُ الرَّحْمَـٰنُ »
+*“Orang-orang yang penyayang akan disayangi oleh Ar-Rahman.”* (HR. Tirmidzi)
+
+---
+
+### 551. **Allah Maha Mengetahui Isi Hati**
+
+﴿ وَٱللَّهُ عَلِيمُۢ بِذَاتِ ٱلصُّدُورِ ﴾
+*“Allah Maha Mengetahui apa yang tersembunyi di dalam hati.”* (QS. Al-Maidah: 7)
+
+---
+
+### 552. **Doa Nabi Isa**
+
+﴿ رَبَّنَآ أَنزِلۡ عَلَيۡنَا مَآئِدَةٗ مِّنَ ٱلسَّمَآءِ ﴾
+*“Ya Tuhan kami, turunkanlah kepada kami hidangan dari langit.”* (QS. Al-Maidah: 114)
+
+---
+
+### 553. **Allah Tidak Menyukai Orang yang Sombong**
+
+﴿ إِنَّ ٱللَّهَ لَا يُحِبُّ كُلَّ مُخۡتَالٖ فَخُورٍ ﴾
+*“Sesungguhnya Allah tidak menyukai setiap orang yang sombong dan membanggakan diri.”* (QS. Luqman: 18)
+
+---
+
+### 554. **Keutamaan Membaca Dzikir**
+
+« سَبَقَ الْمُفَرِّدُونَ … الَّذِينَ يُكْثِرُونَ مِنْ ذِكْرِ اللَّهِ »
+*“Orang-orang yang banyak berdzikir telah mendahului yang lain.”* (HR. Muslim)
+
+---
+
+### 555. **Allah Maha Pengasih**
+
+﴿ وَرَبُّكَ ٱلۡغَفُورُ ذُو ٱلرَّحۡمَةِ ﴾
+*“Tuhanmu adalah Maha Pengampun lagi mempunyai rahmat.”* (QS. Al-Kahfi: 58)
+
+---
+
+### 556. **Larangan Meninggalkan Shalat**
+
+« الْعَهْدُ الَّذِي بَيْنَنَا وَبَيْنَهُمُ الصَّلَاةُ، فَمَنْ تَرَكَهَا فَقَدْ كَفَرَ »
+*“Perjanjian antara kami dan mereka adalah shalat. Barangsiapa meninggalkannya, sungguh ia kafir.”* (HR. Ahmad, Tirmidzi)
+
+---
+
+### 557. **Doa Nabi Ibrahim untuk Negeri Mekah**
+
+﴿ رَبِّ ٱجۡعَلۡ هَـٰذَا بَلَدًا ءَامِنٗا ﴾
+*“Ya Tuhanku, jadikanlah negeri ini negeri yang aman.”* (QS. Al-Baqarah: 126)
+
+---
+
+### 558. **Allah Menyukai Orang yang Bertobat**
+
+﴿ إِنَّ ٱللَّهَ يُحِبُّ ٱلتَّوَّابِينَ ﴾
+*“Sesungguhnya Allah menyukai orang-orang yang bertaubat.”* (QS. Al-Baqarah: 222)
+
+---
+
+### 559. **Keutamaan Memberi Makan Orang Puasa**
+
+« مَنْ فَطَّرَ صَائِمًا كَانَ لَهُ مِثْلُ أَجْرِهِ »
+*“Barangsiapa memberi makan orang berpuasa, baginya pahala seperti orang yang berpuasa.”* (HR. Tirmidzi)
+
+---
+
+### 560. \*\*Allah Maha Menget
+
+
+ahui Rahasia\*\*
+﴿ يَعۡلَمُ ٱلسِّرَّ وَأَخۡفَى ﴾
+*“Dia mengetahui rahasia dan yang lebih tersembunyi lagi.”* (QS. Taha: 7)
+
+---
+
+### 561. **Larangan Berbuat Zalim**
+
+« يَا عِبَادِي، إِنِّي حَرَّمْتُ الظُّلْمَ عَلَى نَفْسِي »
+*“Wahai hamba-Ku, sesungguhnya Aku telah mengharamkan kezhaliman atas diri-Ku.”* (HR. Muslim)
+
+---
+
+### 562. **Doa Nabi Ayyub**
+
+﴿ رَبِّ إِنِّي مَسَّنِيَ ٱلضُّرُّ وَأَنتَ أَرۡحَمُ ٱلرَّٟحِمِينَ ﴾
+*“Ya Tuhanku, aku telah ditimpa penyakit, dan Engkau adalah Yang Maha Penyayang.”* (QS. Al-Anbiya: 83)
+
+---
+
+### 563. **Allah Memberi Cahaya bagi Orang Beriman**
+
+﴿ يَهۡدِي ٱللَّهُ لِنُورِهِۦ مَن يَشَآءُ ﴾
+*“Allah memberikan cahaya-Nya kepada siapa yang Dia kehendaki.”* (QS. An-Nur: 35)
+
+---
+
+### 564. **Keutamaan Puasa**
+
+« كُلُّ عَمَلِ ابْنِ آدَمَ لَهُ إِلَّا الصِّيَامَ، فَإِنَّهُ لِي وَأَنَا أَجْزِي بِهِ »
+*“Setiap amal anak Adam adalah untuknya kecuali puasa, sesungguhnya puasa itu untuk-Ku dan Aku yang membalasnya.”* (HR. Bukhari & Muslim)
+
+---
+
+### 565. **Allah Maha Perkasa Lagi Bijaksana**
+
+﴿ وَهُوَ ٱلۡعَزِيزُ ٱلۡحَكِيمُ ﴾
+*“Dan Dia-lah Yang Maha Perkasa lagi Maha Bijaksana.”* (QS. Al-Hashr: 24)
+
+---
+
+### 566. **Larangan Menyombongkan Diri di Bumi**
+
+﴿ وَلَا تَمۡشِ فِي ٱلۡأَرۡضِ مَرَحًا ﴾
+*“Janganlah engkau berjalan di bumi dengan sombong.”* (QS. Al-Isra: 37)
+
+---
+
+### 567. **Doa Nabi Ibrahim untuk Anak Keturunannya**
+
+﴿ رَبِّ ٱجۡعَلۡنِي وَمِن ذُرِّيَّتِي مُسۡلِمِينَ لَكَ ﴾
+*“Ya Tuhanku, jadikanlah aku dan anak keturunanku termasuk orang-orang yang berserah diri kepada-Mu.”* (QS. Al-Baqarah: 128)
+
+---
+
+
+## 568. **Dalil tentang Malaikat**
+
+**QS. التحريم (At-Tahrim): 6**
+
+> *"عَلَيْهَا مَلَائِكَةٌ غِلَاظٌ شِدَادٌ لَا يَعْصُونَ ٱللَّهَ مَآ أَمَرَهُمْ وَيَفْعَلُونَ مَا يُؤْمَرُونَ"*
+> *"Dijaga oleh malaikat yang kasar lagi keras, mereka tidak mendurhakai Allah terhadap apa yang diperintahkan-Nya, dan selalu mengerjakan apa yang diperintahkan."*
+
+**QS. فاطر (Fathir): 1**
+
+> *"جَاعِلِ ٱلْمَلَـٰٓئِكَةِ رُسُلًا أُو۟لِىٓ أَجْنِحَةٍۢ مَّثْنَىٰ وَثُلَـٰثَ وَرُبَـٰعَ"*
+> *"Yang menjadikan malaikat sebagai utusan, yang mempunyai sayap dua, tiga dan empat."*
+
+---
+
+## 569. **Dalil tentang Puasa**
+
+**QS. البقرة (Al-Baqarah): 183**
+
+> *"يَـٰٓأَيُّهَا ٱلَّذِينَ ءَامَنُوا۟ كُتِبَ عَلَيْكُمُ ٱلصِّيَامُ كَمَا كُتِبَ عَلَى ٱلَّذِينَ مِن قَبْلِكُمْ لَعَلَّكُمْ تَتَّقُونَ"*
+> *"Wahai orang-orang yang beriman, diwajibkan atas kamu berpuasa sebagaimana diwajibkan atas orang sebelum kamu agar kamu bertakwa."*
+
+**Hadis (رواه البخاري ومسلم)**
+
+> *"مَنْ صَامَ رَمَضَانَ إِيمَانًا وَاحْتِسَابًا، غُفِرَ لَهُ مَا تَقَدَّمَ مِنْ ذَنْبِهِ"*
+> *"Barangsiapa berpuasa Ramadhan dengan iman dan mengharap pahala, diampuni dosa-dosanya yang telah lalu."*
+
+---
+
+## 570. **Dalil tentang Haji**
+
+**QS. آل عمران (Ali Imran): 97**
+
+> *"وَلِلَّهِ عَلَى ٱلنَّاسِ حِجُّ ٱلْبَيْتِ مَنِ ٱسْتَطَاعَ إِلَيْهِ سَبِيلًا"*
+> *"Mengerjakan haji adalah kewajiban manusia terhadap Allah, yaitu (bagi) orang yang sanggup mengadakan perjalanan ke Baitullah."*
+
+**Hadis (رواه البخاري ومسلم)**
+
+> *"بُنِيَ الإِسْلَامُ عَلَى خَمْسٍ … وَحَجِّ البَيْتِ مَنِ اسْتَطَاعَ إِلَيْهِ سَبِيلاً"*
+> *"Islam dibangun atas lima perkara … di antaranya haji ke Baitullah bagi yang mampu."*
+
+---
+
+## 571. **Dalil tentang Umrah**
+
+**QS. البقرة (Al-Baqarah): 196**
+
+> *"وَأَتِمُّوا۟ ٱلْحَجَّ وَٱلْعُمْرَةَ لِلَّهِ"*
+> *"Dan sempurnakanlah ibadah haji dan umrah karena Allah."*
+
+**Hadis (رواه الترمذي وابن ماجه)**
+
+> *"العُمْرَةُ إِلَى العُمْرَةِ كَفَّارَةٌ لِمَا بَيْنَهُمَا، وَالحَجُّ المَبْرُورُ لَيْسَ لَهُ جَزَاءٌ إِلاَّ الجَنَّةُ"*
+> *"Umrah ke umrah berikutnya adalah penghapus dosa di antara keduanya, dan haji mabrur tidak ada balasan kecuali surga."*
+
+---
+
+## 572. **Dalil tentang Istri**
+
+**QS. الروم (Ar-Rum): 21**
+
+> *"وَمِنْ ءَايَـٰتِهِۦٓ أَنْ خَلَقَ لَكُم مِّنْ أَنفُسِكُمْ أَزْوَٰجًا لِّتَسْكُنُوٓا۟ إِلَيْهَا وَجَعَلَ بَيْنَكُم مَّوَدَّةً وَرَحْمَةً"*
+> *"Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan untukmu pasangan-pasangan dari jenismu sendiri agar kamu merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang."*
+
+**Hadis (رواه الترمذي)**
+
+> *"خَيْرُكُمْ خَيْرُكُمْ لِأَهْلِهِ وَأَنَا خَيْرُكُمْ لِأَهْلِي"*
+> *"Sebaik-baik kalian adalah yang paling baik terhadap keluarganya, dan aku adalah yang paling baik terhadap keluargaku."*
+
+---
+
+## 573. **Dalil tentang Madu**
+
+**QS. النحل (An-Nahl): 68-69**
+
+> *"يَخْرُجُ مِن بُطُونِهَا شَرَابٌ مُّخْتَلِفٌ أَلْوَٰنُهُ فِيهِ شِفَآءٌ لِّلنَّاسِ"*
+> *"Dari perut lebah itu keluar minuman (madu) yang bermacam-macam warnanya, di dalamnya terdapat obat yang menyembuhkan bagi manusia."*
+
+---
+
+## 574. **Dalil tentang Shalat**
+
+**QS. البقرة (Al-Baqarah): 43**
+
+> *"وَأَقِيمُوا۟ ٱلصَّلَوٰةَ وَءَاتُوا۟ ٱلزَّكَوٰةَ وَٱرْكَعُوا۟ مَعَ ٱلرَّٰكِعِينَ"*
+> *"Dan dirikanlah shalat, tunaikanlah zakat, dan ruku’lah beserta orang-orang yang ruku’."*
+
+**Hadis (رواه مسلم)**
+
+> *"رَأْسُ الأَمْرِ الإِسْلاَمُ، وَعَمُودُهُ الصَّلاَةُ، وَذِرْوَةُ سَنَامِهِ الْجِهَادُ"*
+> *"Pokok perkara adalah Islam, tiangnya adalah shalat, dan puncaknya adalah jihad."*
+
+---
+
+## 575. **Dalil tentang Zakat Fitrah & Mal**
+
+**QS. التوبة (At-Taubah): 103**
+
+> *"خُذْ مِنْ أَمْوَٰلِهِمْ صَدَقَةً تُطَهِّرُهُمْ وَتُزَكِّيهِم بِهَا"*
+> *"Ambillah zakat dari sebagian harta mereka, dengan zakat itu kamu membersihkan dan mensucikan mereka."*
+
+**Hadis Zakat Fitrah (رواه البخاري ومسلم)**
+
+> *"فَرَضَ رَسُولُ اللَّهِ صَلَّى اللهُ عَلَيْهِ وَسَلَّمَ زَكَاةَ الفِطْرِ، طُهْرَةً لِلصَّائِمِ مِنَ اللَّغْوِ وَالرَّفَثِ"*
+> *"Rasulullah ﷺ mewajibkan zakat fitrah sebagai penyuci bagi orang yang berpuasa dari perkataan sia-sia dan kotor."*
+
+---
+
+## 576. **Dalil tentang Pembunuhan**
+
+**QS. المائدة (Al-Maidah): 32**
+
+> *"مَنْ قَتَلَ نَفْسًۢا بِغَيْرِ نَفْسٍ أَوْ فَسَادٍ فِى ٱلۡأَرْضِ فَكَأَنَّمَا قَتَلَ ٱلنَّاسَ جَمِيعًۭا"*
+> *"Barangsiapa membunuh seorang manusia, bukan karena orang itu membunuh orang lain, atau membuat kerusakan di muka bumi, maka seakan-akan ia telah membunuh manusia seluruhnya."*
+
+**Hadis (رواه النسائي وابن ماجه)**
+
+> *"زَوَالُ الدُّنْيَا أَهْوَنُ عِنْدَ اللَّهِ مِنْ قَتْلِ رَجُلٍ مُسْلِمٍ"*
+> *"Hancurnya dunia lebih ringan bagi Allah daripada terbunuhnya seorang muslim."*
+
+---
+
+## 577. **Dalil tentang Fitnah**
+
+**QS. البقرة (Al-Baqarah): 191**
+
+> *"وَٱلْفِتْنَةُ أَشَدُّ مِنَ ٱلْقَتْلِ"*
+> *"Dan fitnah itu lebih besar (berat) daripada pembunuhan."*
+
+**Hadis (رواه مسلم)**
+
+> *"سَتَكُونُ فِتَنٌ، القَاعِدُ فِيهَا خَيْرٌ مِنَ القَائِمِ، وَالقَائِمُ فِيهَا خَيْرٌ مِنَ المَاشِي، وَالمَاشِي فِيهَا خَيْرٌ مِنَ السَّاعِي"*
+> *"Akan ada fitnah-fitnah; orang yang duduk lebih baik daripada yang berdiri, yang berdiri lebih baik daripada yang berjalan, dan yang berjalan lebih baik daripada yang berlari menuju fitnah."*
+
+---
+
+## 578. **Dalil tentang Berteman dengan Teman Baik**
+
+**QS. الكهف (Al-Kahfi): 28**
+
+> *"وَٱصْبِرْ نَفْسَكَ مَعَ ٱلَّذِينَ يَدْعُونَ رَبَّهُم بِٱلْغَدَوٰةِ وَٱلْعَشِىِّ يُرِيدُونَ وَجْهَهُ"*
+> *"Bersabarlah engkau bersama orang-orang yang berdoa kepada Tuhannya di pagi dan petang hari dengan mengharap keridhaan-Nya."*
+
+**Hadis (رواه البخاري ومسلم)**
+
+> *"مَثَلُ الجَلِيسِ الصَّالِحِ وَالجَلِيسِ السَّوْءِ كَحَامِلِ المِسْكِ وَنَافِخِ الكِيرِ"*
+> *"Perumpamaan teman yang baik dan teman yang buruk adalah seperti penjual minyak wangi dan pandai besi."*
+
+---
+
+
+
+`;
+
+        const chatBox = document.getElementById('chat-box');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+
+        // Fungsi untuk menambahkan pesan ke kotak chat
+        function addMessage(sender, message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('flex', sender === 'user' ? 'justify-end' : 'justify-start');
+            
+            const messageBubble = document.createElement('div');
+            messageBubble.classList.add('rounded-lg', 'py-2', 'px-4', 'max-w-xs');
+            if (sender === 'user') {
+                messageBubble.classList.add('bg-indigo-500', 'text-white');
+            } else {
+                messageBubble.classList.add('bg-gray-300', 'text-gray-800', 'whitespace-pre-wrap');
+            }
+            messageBubble.textContent = message;
+            
+            messageDiv.appendChild(messageBubble);
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll ke bawah
+        }
+
+        let loadingMessageElement = null;
+
+        // Fungsi untuk menampilkan indikator loading
+        function showLoading() {
+            loadingMessageElement = document.createElement('div');
+            loadingMessageElement.classList.add('flex', 'justify-start');
+            loadingMessageElement.id = 'loading-message';
+            
+            const loadingBubble = document.createElement('div');
+            loadingBubble.classList.add('bg-gray-300', 'text-gray-800', 'rounded-lg', 'py-2', 'px-4', 'max-w-xs', 'flex', 'items-center', 'space-x-2');
+            
+            const messageSpan = document.createElement('span');
+            messageSpan.textContent = 'AI ini sedang membaca data nya mohon tunggu';
+            
+            const dotPulseDiv = document.createElement('div');
+            dotPulseDiv.classList.add('dot-pulse');
+
+            loadingBubble.appendChild(messageSpan);
+            loadingBubble.appendChild(dotPulseDiv);
+            
+            loadingMessageElement.appendChild(loadingBubble);
+            chatBox.appendChild(loadingMessageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Fungsi untuk menyembunyikan indikator loading
+        function hideLoading() {
+            if (loadingMessageElement) {
+                loadingMessageElement.remove();
+                loadingMessageElement = null;
+            }
+        }
+
+        // Fungsi untuk mencari dalil berdasarkan kata kunci
+        function findDalil(query) {
+            const allDalil = dalilText.split('---'); // Memisahkan setiap dalil
+            const lowerCaseQuery = query.toLowerCase();
+
+            for (const dalil of allDalil) {
+                // Mencari judul dalil, misal: **Tentang Sabar**
+                const dalilTitleMatch = dalil.match(/\*\*(.+?)\*\*/);
+                if (dalilTitleMatch) {
+                    const dalilTitle = dalilTitleMatch[1];
+                    if (dalilTitle.toLowerCase().includes(lowerCaseQuery)) {
+                        return dalil.trim(); // Mengembalikan dalil yang ditemukan
+                    }
+                }
+            }
+
+            return null; // Mengembalikan null jika tidak ada yang cocok
+        }
+
+        // Event listener saat form disubmit (saat tombol kirim ditekan atau Enter)
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Mencegah form untuk memuat ulang halaman
+            const userMessage = userInput.value.trim();
+            if (userMessage === '') return;
+
+            // Tambahkan pesan pengguna ke kotak chat
+            addMessage('user', userMessage);
+            userInput.value = ''; // Kosongkan input field
+
+            showLoading(); // Tampilkan indikator loading
+
+            // Cari dalil yang sesuai
+            const foundDalil = findDalil(userMessage);
+
+            // Beri jeda 5 detik (5000 milidetik) untuk simulasi respons
+            setTimeout(() => {
+                hideLoading(); // Sembunyikan indikator loading
+                if (foundDalil) {
+                    addMessage('bot', `Ini dalil yang saya temukan:\n\n` + foundDalil);
+                } else {
+                    addMessage('bot', `Maaf, saya tidak menemukan dalil yang relevan dengan kata kunci Anda. Coba ketik kata kunci yang lebih spesifik.`);
+                }
+            }, 5000); 
+        });
+    </script>
+</body>
+</html>
