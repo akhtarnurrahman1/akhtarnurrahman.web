@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Kuis Trivia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        .game-section {
+            background-color: #2d3748;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .game-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #cbd5e0;
+        }
+        .btn {
+            @apply px-6 py-3 rounded-xl font-bold transition-all duration-300 transform hover:scale-105;
+        }
+        .btn-answer {
+            background-color: #4c51bf;
+            @apply text-white hover:bg-blue-700 w-full mb-2;
+        }
+        .btn-correct {
+            @apply bg-green-600;
+        }
+        .btn-wrong {
+            @apply bg-red-600;
+        }
+        .btn-disabled {
+            @apply opacity-50 cursor-not-allowed;
+        }
+        .btn-red {
+            @apply bg-red-600 text-white hover:bg-red-700;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 p-8 flex items-center justify-center min-h-screen">
+    
+    <!-- Game Kuis Trivia -->
+    <main class="w-full max-w-xl mx-auto space-y-12">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-blue-500 tracking-tight">Game Kuis Trivia</h1>
+        </header>
+        <div id="trivia-quiz-game" class="game-section p-6 text-center">
+            <h2 class="game-title mb-4">Uji Pengetahuan Anda!</h2>
+            <div id="quiz-container">
+                <p id="question-text" class="text-xl mb-4">Memuat pertanyaan...</p>
+                <div id="answers-container" class="flex flex-col space-y-2">
+                    <!-- Tombol jawaban akan dibuat oleh JavaScript -->
+                </div>
+                <div class="flex justify-between items-center mt-4">
+                    <p id="score-text" class="text-lg font-bold">Skor: 0 / 0</p>
+                    <button id="next-button" class="btn btn-answer hidden">Lanjut</button>
+                    <button id="restart-button" class="btn btn-red hidden">Mulai Lagi</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ==========================================================
+        // Logika untuk Game Kuis Trivia
+        // ==========================================================
+        const questionText = document.getElementById('question-text');
+        const answersContainer = document.getElementById('answers-container');
+        const nextButton = document.getElementById('next-button');
+        const restartButton = document.getElementById('restart-button');
+        const scoreText = document.getElementById('score-text');
+
+        // Menambahkan lebih banyak pertanyaan ke dalam array
+        const questions = [
+            {
+                question: "Apa ibu kota Indonesia?",
+                answers: ["Jakarta", "Surabaya", "Bandung"],
+                correctAnswer: "Jakarta"
+            },
+            {
+                question: "Planet terdekat dari Matahari adalah?",
+                answers: ["Bumi", "Venus", "Merkurius", "Mars"],
+                correctAnswer: "Merkurius"
+            },
+            {
+                question: "Berapa jumlah hari dalam satu tahun kabisat?",
+                answers: ["365", "366", "367"],
+                correctAnswer: "366"
+            },
+            {
+                question: "Siapakah penemu bola lampu?",
+                answers: ["Thomas Edison", "Nikola Tesla", "Alexander Graham Bell"],
+                correctAnswer: "Thomas Edison"
+            },
+            {
+                question: "Alat musik tradisional Jawa yang dimainkan dengan cara dipetik adalah?",
+                answers: ["Gamelan", "Angklung", "Siter", "Sasando"],
+                correctAnswer: "Siter"
+            },
+            {
+                question: "Apakah nama sungai terpanjang di dunia?",
+                answers: ["Sungai Nil", "Sungai Amazon", "Sungai Yangtze"],
+                correctAnswer: "Sungai Nil"
+            },
+            {
+                question: "Berapa banyak benua yang ada di Bumi?",
+                answers: ["5", "6", "7", "8"],
+                correctAnswer: "7"
+            },
+            {
+                question: "Cabang ilmu biologi yang mempelajari tentang serangga adalah?",
+                answers: ["Botani", "Zoologi", "Entomologi", "Mikrobiologi"],
+                correctAnswer: "Entomologi"
+            },
+            {
+                question: "Apakah nama film animasi yang diproduksi oleh Pixar tentang mainan yang hidup?",
+                answers: ["Finding Nemo", "Toy Story", "Up"],
+                correctAnswer: "Toy Story"
+            },
+            {
+                question: "Siapakah pendiri Microsoft?",
+                answers: ["Steve Jobs", "Bill Gates", "Mark Zuckerberg"],
+                correctAnswer: "Bill Gates"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+
+        function showQuestion() {
+            const currentQuestion = questions[currentQuestionIndex];
+            questionText.textContent = currentQuestion.question;
+            answersContainer.innerHTML = ''; // Hapus tombol jawaban sebelumnya
+            nextButton.classList.add('hidden');
+
+            currentQuestion.answers.forEach(answer => {
+                const button = document.createElement('button');
+                button.textContent = answer;
+                button.classList.add('btn', 'btn-answer');
+                button.addEventListener('click', () => selectAnswer(answer));
+                answersContainer.appendChild(button);
+            });
+        }
+
+        function selectAnswer(selectedAnswer) {
+            const currentQuestion = questions[currentQuestionIndex];
+            const isCorrect = selectedAnswer === currentQuestion.correctAnswer;
+
+            // Nonaktifkan semua tombol setelah jawaban dipilih
+            answersContainer.querySelectorAll('.btn-answer').forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent === currentQuestion.correctAnswer) {
+                    btn.classList.add('btn-correct');
+                } else if (btn.textContent === selectedAnswer) {
+                    btn.classList.add('btn-wrong');
+                }
+            });
+
+            if (isCorrect) {
+                score++;
+            }
+
+            updateScore();
+            nextButton.classList.remove('hidden');
+        }
+
+        function updateScore() {
+            scoreText.textContent = `Skor: ${score} / ${currentQuestionIndex + 1}`;
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                showQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            questionText.textContent = `Kuis selesai! Skor akhir Anda: ${score} dari ${questions.length}.`;
+            answersContainer.innerHTML = '';
+            nextButton.classList.add('hidden');
+            restartButton.classList.remove('hidden');
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            restartButton.classList.add('hidden');
+            updateScore();
+            showQuestion();
+        }
+
+        nextButton.addEventListener('click', nextQuestion);
+        restartButton.addEventListener('click', restartQuiz);
+
+        // Mulai kuis saat halaman dimuat
+        showQuestion();
+    </script>
+</body>
+</html>
